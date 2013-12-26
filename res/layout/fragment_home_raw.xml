@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <TextView
+        android:id="@+id/tv_gps"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="15dp"
+        android:text="@string/txt_gps"
+        android:textAppearance="?android:attr/textAppearanceLarge" />
+    
+    <View
+        android:id="@+id/h_divider2"
+        android:layout_width="match_parent"
+        android:layout_height="2dip"
+        android:layout_below="@id/tv_gps"
+        android:layout_marginLeft="4dip"
+        android:layout_marginRight="4dip"
+        android:layout_marginTop="10dip"
+        android:background="?android:attr/dividerVertical" />
+
+    <TextView
+        android:id="@+id/tv_lat"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/tv_gps"
+        android:layout_below="@+id/h_divider2"
+        android:layout_marginTop="25dp"
+        android:textStyle="bold"
+        android:text="@string/txt_gps_lat" />
+
+    <TextView
+        android:id="@+id/tv_long"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/tv_lat"
+        android:layout_below="@+id/tv_lat"
+        android:layout_marginTop="20dp"
+        android:textStyle="bold"
+        android:text="@string/txt_gps_long" />
+
+    <TextView
+        android:id="@+id/tv_alt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/tv_long"
+        android:layout_marginLeft="100dp"
+        android:layout_toRightOf="@+id/tv_long"
+        android:textStyle="bold"
+        android:text="@string/txt_gps_alt" />
+
+    <TextView
+        android:id="@+id/tv_acc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/tv_long"
+        android:layout_alignLeft="@+id/tv_alt"
+        android:textStyle="bold"
+        android:text="@string/txt_gps_acc" />
+
+    <TextView
+        android:id="@+id/tv_lat_res"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/tv_long"
+        android:layout_marginLeft="10dp"
+        android:layout_toRightOf="@+id/tv_long"
+        android:text="@string/txt_empty" />
+
+    <TextView
+        android:id="@+id/tv_long_res"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/tv_long"
+        android:layout_alignLeft="@+id/tv_lat_res"
+        android:text="@string/txt_empty" />
+
+    <TextView
+        android:id="@+id/tv_alt_res"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/tv_alt"
+        android:layout_alignBottom="@+id/tv_alt"
+        android:layout_marginLeft="20dp"
+        android:layout_toRightOf="@+id/tv_acc"
+        android:text="@string/txt_empty" />
+
+    <TextView
+        android:id="@+id/tv_acc_res"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/tv_acc"
+        android:layout_alignBottom="@+id/tv_acc"
+        android:layout_alignLeft="@+id/tv_alt_res"
+        android:text="@string/txt_empty" />
+    
+    <View
+        android:id="@+id/h_divider3"
+        android:layout_width="match_parent"
+        android:layout_height="2dip"
+        android:layout_below="@id/tv_long"
+        android:layout_marginLeft="4dip"
+        android:layout_marginRight="4dip"
+        android:layout_marginTop="10dip"
+        android:background="?android:attr/dividerVertical" />
+
+    <TextView
+        android:id="@+id/tv_air"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/tv_long"
+        android:layout_below="@+id/h_divider3"
+        android:layout_marginTop="30dp"
+        android:text="@string/txt_air"
+        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+</RelativeLayout>

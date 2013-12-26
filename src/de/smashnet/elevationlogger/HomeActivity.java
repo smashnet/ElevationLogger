@@ -4,12 +4,19 @@ import java.util.Locale;
 
 import android.app.ActionBar;
 import android.app.FragmentTransaction;
+import android.content.Context;
+import android.location.Criteria;
+import android.location.GpsStatus;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
@@ -18,7 +25,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class HomeActivity extends FragmentActivity implements
-		ActionBar.TabListener {
+		ActionBar.TabListener, LocationListener {
 
 	/**
 	 * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -29,6 +36,9 @@ public class HomeActivity extends FragmentActivity implements
 	 * {@link android.support.v4.app.FragmentStatePagerAdapter}.
 	 */
 	SectionsPagerAdapter mSectionsPagerAdapter;
+	LocationManager locMan;
+	String provider;
+	boolean gpsIsActive;
 
 	/**
 	 * The {@link ViewPager} that will host the section contents.
@@ -73,6 +83,9 @@ public class HomeActivity extends FragmentActivity implements
 					.setText(mSectionsPagerAdapter.getPageTitle(i))
 					.setTabListener(this));
 		}
+		
+		locMan = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+		gpsIsActive = false;
 	}
 
 	@Override
@@ -80,6 +93,51 @@ public class HomeActivity extends FragmentActivity implements
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.home, menu);
 		return true;
+	}
+	
+	@Override
+	public void onResume() {
+	  super.onResume();
+	  if(provider != null){
+		  locMan.requestLocationUpdates(provider, 400, 0, this);
+		  gpsIsActive = true;
+	  }
+	}
+	
+	@Override
+	public void onLocationChanged(Location location) {
+		TextView latRes = (TextView) findViewById(R.id.tv_lat_res);
+		TextView longRes = (TextView) findViewById(R.id.tv_long_res);
+		TextView altRes = (TextView) findViewById(R.id.tv_alt_res);
+		TextView accRes = (TextView) findViewById(R.id.tv_acc_res);
+		
+		latRes.setText(String.valueOf(location.getLatitude()));
+		longRes.setText(String.valueOf(location.getLongitude()));
+		altRes.setText(String.valueOf(location.getAltitude()) + "m");
+		accRes.setText(String.valueOf(location.getAccuracy()) + "m");
+		
+		System.out.println("Lat: " + location.getLatitude());
+		System.out.println("Long: " + location.getLongitude());
+	    System.out.println("Alt: " + location.getAltitude());
+	    System.out.println("Acc: " + location.getAccuracy());
+	}
+
+	@Override
+	public void onProviderDisabled(String provider) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onProviderEnabled(String provider) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onStatusChanged(String provider, int status, Bundle extras) {
+		// TODO Auto-generated method stub
+		
 	}
 
 	@Override
@@ -101,9 +159,31 @@ public class HomeActivity extends FragmentActivity implements
 	public void onStartGps(View view) {
 		LinearLayout log = (LinearLayout) findViewById(R.id.linlay_log);
 		TextView ack = new TextView(this);
-		ack.setText("I will!");
 		
-		log.addView(ack);
+		if(gpsIsActive){
+			ack.setText("GPS already active!");
+			log.addView(ack);
+			return;
+		}else{
+			ack.setText("I will! -- Starting GPS");
+			log.addView(ack);
+		}
+		
+	    provider = LocationManager.GPS_PROVIDER;
+	    Location location = locMan.getLastKnownLocation(provider);
+	    
+	    if(provider != null){
+			  locMan.requestLocationUpdates(provider, 400, 0, this);
+			  gpsIsActive = true;
+	    }
+
+	    // Initialize the location fields
+	    if (location != null) {
+	      System.out.println("Provider " + provider + " has been selected.");
+	      onLocationChanged(location);
+	    } else {
+	      System.out.println("No location available");
+	    }
 	}
 	
 	public void onStartAir(View view) {
@@ -177,7 +257,7 @@ public class HomeActivity extends FragmentActivity implements
 				onCreateHome(rootView);
 				break;
 			case 2:
-				rootView = inflater.inflate(R.layout.fragment_home_dummy, container, false);
+				rootView = inflater.inflate(R.layout.fragment_home_raw, container, false);
 				onCreateRawView(rootView);
 				break;
 			case 3:
@@ -212,5 +292,4 @@ public class HomeActivity extends FragmentActivity implements
 			log.addView(welcome);
 		}
 	}
-
 }

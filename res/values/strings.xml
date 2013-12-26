@@ -8,5 +8,12 @@
     <string name="title_section3">Diagrams</string>
     <string name="btn_start_gps">Start GPS</string>
     <string name="btn_start_air">Start Air Pressure</string>
+    <string name="txt_gps">GPS</string>
+    <string name="txt_gps_lat">Latitude:</string>
+    <string name="txt_gps_long">Longitude:</string>
+    <string name="txt_gps_acc">Accuracy:</string>
+    <string name="txt_gps_alt">Altitude:</string>
+    <string name="txt_empty">-</string>
+    <string name="txt_air">Air Pressure</string>
 
 </resources>
