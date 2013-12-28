@@ -106,8 +106,7 @@
         android:layout_below="@id/tv_long"
         android:layout_marginLeft="4dip"
         android:layout_marginRight="4dip"
-        android:layout_marginTop="10dip"
-        android:background="?android:attr/dividerVertical" />
+        android:layout_marginTop="10dip" />
 
     <TextView
         android:id="@+id/tv_air"
@@ -118,5 +117,34 @@
         android:layout_marginTop="30dp"
         android:text="@string/txt_air"
         android:textAppearance="?android:attr/textAppearanceLarge" />
+    
+    <View
+        android:id="@+id/h_divider4"
+        android:layout_width="match_parent"
+        android:layout_height="2dip"
+        android:layout_below="@id/tv_air"
+        android:layout_marginLeft="4dip"
+        android:layout_marginRight="4dip"
+        android:layout_marginTop="10dip"
+        android:background="?android:attr/dividerVertical" />
+
+    <TextView
+        android:id="@+id/tv_air_pressure"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/tv_air"
+        android:layout_below="@+id/h_divider4"
+        android:layout_marginTop="25dp"
+        android:textStyle="bold"
+        android:text="@string/txt_air_pressure" />
+
+    <TextView
+        android:id="@+id/tv_air_pressure_res"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/tv_air_pressure"
+        android:layout_alignBottom="@+id/tv_air_pressure"
+        android:layout_alignLeft="@+id/tv_long_res"
+        android:text="@string/txt_empty" />
 
 </RelativeLayout>

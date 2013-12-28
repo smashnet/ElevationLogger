@@ -1,22 +1,25 @@
 package de.smashnet.elevationlogger;
 
+import java.io.File;
 import java.util.Locale;
 
 import android.app.ActionBar;
 import android.app.FragmentTransaction;
 import android.content.Context;
-import android.location.Criteria;
-import android.location.GpsStatus;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
@@ -25,7 +28,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class HomeActivity extends FragmentActivity implements
-		ActionBar.TabListener, LocationListener {
+		ActionBar.TabListener, LocationListener, SensorEventListener {
 
 	/**
 	 * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -36,9 +39,13 @@ public class HomeActivity extends FragmentActivity implements
 	 * {@link android.support.v4.app.FragmentStatePagerAdapter}.
 	 */
 	SectionsPagerAdapter mSectionsPagerAdapter;
+	SensorManager mSensorManager;
+	Sensor mPressure;
 	LocationManager locMan;
 	String provider;
-	boolean gpsIsActive;
+	
+	float currentPressure = 0.0f;
+	GpxWriter gpx;
 
 	/**
 	 * The {@link ViewPager} that will host the section contents.
@@ -84,8 +91,20 @@ public class HomeActivity extends FragmentActivity implements
 					.setTabListener(this));
 		}
 		
+		// Init air pressure sensor
+		mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+	    mPressure = mSensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
+	    
+	    // Init GPS
 		locMan = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-		gpsIsActive = false;
+		provider = LocationManager.GPS_PROVIDER;
+	    if(provider != null){
+	    	locMan.requestLocationUpdates(provider, 400, 0, this);
+	    }
+	    
+	    // Create GpxWriter
+	    gpx = new GpxWriter("record.gpx", getStorageDir());
+	    gpx.writeHeader();
 	}
 
 	@Override
@@ -98,10 +117,42 @@ public class HomeActivity extends FragmentActivity implements
 	@Override
 	public void onResume() {
 	  super.onResume();
+	  
+	  // Resume air pressure sensor
+	  mSensorManager.registerListener(this, mPressure, 500000);
+		  
+	  // Resume GPS
 	  if(provider != null){
 		  locMan.requestLocationUpdates(provider, 400, 0, this);
-		  gpsIsActive = true;
 	  }
+	}
+	
+	@Override
+	public void onPause() {
+		super.onPause();
+		mSensorManager.unregisterListener(this);
+	}
+	
+	@Override
+	public void onStop() {
+		super.onStop();
+		gpx.writeFooter();
+		gpx.flushToFile();
+	}
+	
+	@Override
+	public void onAccuracyChanged(Sensor sensor, int accuracy) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onSensorChanged(SensorEvent event) {
+		currentPressure = event.values[0];
+		System.out.println("Air pressure: " + currentPressure + " mBar");
+		
+		TextView airRes = (TextView) findViewById(R.id.tv_air_pressure_res);
+		airRes.setText(String.valueOf(currentPressure) + " mBar");
 	}
 	
 	@Override
@@ -110,6 +161,9 @@ public class HomeActivity extends FragmentActivity implements
 		TextView longRes = (TextView) findViewById(R.id.tv_long_res);
 		TextView altRes = (TextView) findViewById(R.id.tv_alt_res);
 		TextView accRes = (TextView) findViewById(R.id.tv_acc_res);
+		
+		gpx.addRoutePoint(location.getLatitude(), location.getLongitude(), location.getAltitude(), location.getAccuracy(), currentPressure, location.getTime());
+		gpx.flushToFile();
 		
 		latRes.setText(String.valueOf(location.getLatitude()));
 		longRes.setText(String.valueOf(location.getLongitude()));
@@ -141,8 +195,7 @@ public class HomeActivity extends FragmentActivity implements
 	}
 
 	@Override
-	public void onTabSelected(ActionBar.Tab tab,
-			FragmentTransaction fragmentTransaction) {
+	public void onTabSelected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
 		// When the given tab is selected, switch to the corresponding page in
 		// the ViewPager.
 		mViewPager.setCurrentItem(tab.getPosition());
@@ -156,39 +209,17 @@ public class HomeActivity extends FragmentActivity implements
 	public void onTabReselected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
 	}
 	
-	public void onStartGps(View view) {
-		LinearLayout log = (LinearLayout) findViewById(R.id.linlay_log);
-		TextView ack = new TextView(this);
-		
-		if(gpsIsActive){
-			ack.setText("GPS already active!");
-			log.addView(ack);
-			return;
-		}else{
-			ack.setText("I will! -- Starting GPS");
-			log.addView(ack);
-		}
-		
-	    provider = LocationManager.GPS_PROVIDER;
-	    Location location = locMan.getLastKnownLocation(provider);
-	    
-	    if(provider != null){
-			  locMan.requestLocationUpdates(provider, 400, 0, this);
-			  gpsIsActive = true;
-	    }
-
-	    // Initialize the location fields
-	    if (location != null) {
-	      System.out.println("Provider " + provider + " has been selected.");
-	      onLocationChanged(location);
-	    } else {
-	      System.out.println("No location available");
-	    }
-	}
-	
-	public void onStartAir(View view) {
-		
-	}
+	public File getStorageDir() {
+        // Get the directory for the user's public pictures directory. 
+        File file = new File(Environment.getExternalStoragePublicDirectory("ElevationLog"), "measurements");
+        if (!file.exists()) {
+        	if(!file.mkdirs())
+        		System.out.println("Directory not created");
+        } else {
+        	System.out.println("Directory exists!");
+        }
+        return file;
+    }
 
 	/**
 	 * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
@@ -284,7 +315,6 @@ public class HomeActivity extends FragmentActivity implements
 		}
 
 		private void onCreateHome(View rootView) {
-			// TODO Auto-generated method stub
 			TextView welcome = new TextView(rootView.getContext());
 			LinearLayout log = (LinearLayout) rootView.findViewById(R.id.linlay_log);
 			welcome.setText("Get some nuts!");

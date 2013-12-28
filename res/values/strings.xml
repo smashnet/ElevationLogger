@@ -15,5 +15,7 @@
     <string name="txt_gps_alt">Altitude:</string>
     <string name="txt_empty">-</string>
     <string name="txt_air">Air Pressure</string>
+    <string name="txt_air_pressure">Pressure:</string>
+    <string name="txt_console">Console</string>
 
 </resources>
