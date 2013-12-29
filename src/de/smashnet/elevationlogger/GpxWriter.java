@@ -67,20 +67,21 @@ public class GpxWriter {
 	 */
 	public void writeHeader() {
 		Log.i("GpxWriter", "Logging to file: " + filename);
-		SimpleDateFormat sDateFormat = new SimpleDateFormat("yyMMdd-HHmm", Locale.GERMANY);
+		SimpleDateFormat sDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.GERMANY);
 		String date = sDateFormat.format(time);
 		sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n");
 		sb.append("<gpx version=\"1.1\" creator=\"ElevationLogger v0.1 experimental\">\n");
 		sb.append("\t<metadata>\n");
 		sb.append("\t\t<name>" + filename + "</name>\n");
-		sb.append("\t\t<desc>Recording started " + date + "</desc>\n");
+		sb.append("\t\t<time>" + date + "</time>\n");
 		sb.append("\t\t<author>\n");
-		sb.append("\t\t\t<name>Nicolas Inden</name>\n");
+		sb.append("\t\t\t<name>ElevationLogger</name>\n");
 		sb.append("\t\t</author>\n");
 		sb.append("\t</metadata>\n");
-		sb.append("\t<rte>\n");
+		sb.append("\t<trk>\n");
 		sb.append("\t\t<name>ElevationLogger recording</name>\n");
 		sb.append("\t\t<desc></desc>\n");
+		sb.append("\t\t<trkseg>\n");
 	}
 	
 	/**
@@ -88,7 +89,8 @@ public class GpxWriter {
 	 * this file as finished
 	 */
 	public void writeFooter() {
-		sb.append("\t</rte>\n");
+		sb.append("\t\t</trkseg>\n");
+		sb.append("\t</trk>\n");
 		sb.append("</gpx>\n");
 		finished = true;
 	}
@@ -106,13 +108,13 @@ public class GpxWriter {
 	public void addRoutePoint(double lat, double lon, double alt, float acc, float mbar, long time) {
 		if(finished)
 			return;
-		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.GERMANY);
+		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.GERMANY);
 		String isoTime = df.format(new Date(time));
-		sb.append("\t\t<rtept lat=\"" + lat + "\" lon=\"" + lon + "\">\n");
-		sb.append("\t\t\t<ele>" + alt + "</ele>\n");
-		sb.append("\t\t\t<time>" + isoTime + "</time>\n");
-		sb.append("\t\t\t<desc>mbar:" + mbar + ",acc:" + acc + "</desc>\n");
-		sb.append("\t\t</rtept>\n");
+		sb.append("\t\t\t<trkpt lat=\"" + lat + "\" lon=\"" + lon + "\">\n");
+		sb.append("\t\t\t\t<ele>" + alt + "</ele>\n");
+		sb.append("\t\t\t\t<time>" + isoTime + "</time>\n");
+		sb.append("\t\t\t\t<desc>mbar:" + mbar + ",acc:" + acc + "</desc>\n");
+		sb.append("\t\t\t</trkpt>\n");
 	}
 	
 	/**
