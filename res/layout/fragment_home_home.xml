@@ -13,6 +13,16 @@
         android:layout_marginTop="10dp"
         android:text="@string/txt_console"
         android:textAppearance="?android:attr/textAppearanceLarge" />
+    
+     <Button
+        android:id="@+id/btn_service"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/tv_console"
+        android:layout_alignBottom="@+id/tv_console"
+        android:layout_alignRight="@+id/sv_log"
+        android:onClick="onToggleService"
+        android:text="@string/txt_service" />
 
     <View
         android:id="@+id/h_divider1"
@@ -42,6 +52,8 @@
             android:layout_gravity="bottom" >
 
         </LinearLayout>
-    </ScrollView>    
+    </ScrollView>
+
+   
 
 </RelativeLayout>

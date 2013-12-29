@@ -46,6 +46,11 @@ public class HomeActivity extends FragmentActivity implements
 	 * The {@link ViewPager} that will host the section contents.
 	 */
 	ViewPager mViewPager;
+	
+	/**
+	 * Service running
+	 */
+	boolean serviceRunning = false;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -88,13 +93,9 @@ public class HomeActivity extends FragmentActivity implements
 		
 		// Register to receive messages.
 		// We are registering an observer (mMessageReceiver) to receive Intents
-		// with actions named "custom-event-name".
+		// with actions named "sensor-data".
 		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
 		    new IntentFilter("sensor-data"));
-		
-		// Start SensorService
-		Intent i= new Intent(this, SensorService.class);
-		this.startService(i); 
 	}
 
 	@Override
@@ -137,6 +138,30 @@ public class HomeActivity extends FragmentActivity implements
 
 	@Override
 	public void onTabReselected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
+	}
+	
+	public void onToggleService(View view) {
+		LinearLayout linlay = (LinearLayout) findViewById(R.id.linlay_log);
+		
+		if(!serviceRunning) {
+			// Start SensorService
+			Intent i = new Intent(this, SensorService.class);
+			this.startService(i);
+			serviceRunning = true;
+			
+			TextView msg = new TextView(this);
+			msg.setText("Enabled SensorService (first results may take some time)");
+			linlay.addView(msg);
+		}else{
+			// Stop SensorService
+			Intent i = new Intent(this, SensorService.class);
+			this.stopService(i);
+			serviceRunning = false;
+			
+			TextView msg = new TextView(this);
+			msg.setText("Disabled SensorService");
+			linlay.addView(msg);
+		}
 	}
 	
 	/**

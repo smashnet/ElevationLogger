@@ -22,11 +22,12 @@ public class SensorService extends Service
 			 implements LocationListener, SensorEventListener{
 	
 	SensorManager mSensorManager;
-	Sensor mPressure;
 	LocationManager mLocationManager;
+	Sensor mPressure;
 	String mProvider;
 	float currentPressure = 0.0f;
 	GpxWriter mGpxWriter;
+	
 
 	@Override
 	public IBinder onBind(Intent intent) {
@@ -35,13 +36,13 @@ public class SensorService extends Service
 	
 	@Override
 	public void onCreate() {
-		
+
 	}
 	
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		Log.i("SensorServie", "Service destroyed!");
+		Log.i("SensorServie", "Service stopped!");
 		mSensorManager.unregisterListener(this);
 		mLocationManager.removeUpdates(this);
 		mGpxWriter.writeFooter();
