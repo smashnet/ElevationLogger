@@ -23,6 +23,13 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+/**
+ * Main view of the ElevationLogger Android tool. 
+ * 
+ * @author Nicolas Inden
+ * @contact nicolas.inden@smashnet.de
+ * @date 29.12.2013
+ */
 public class HomeActivity extends FragmentActivity implements
 		ActionBar.TabListener {
 
@@ -48,7 +55,7 @@ public class HomeActivity extends FragmentActivity implements
 	ViewPager mViewPager;
 	
 	/**
-	 * Service running
+	 * SensorService running
 	 */
 	boolean serviceRunning = false;
 
@@ -140,6 +147,12 @@ public class HomeActivity extends FragmentActivity implements
 	public void onTabReselected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
 	}
 	
+	/**
+	 * If the Toggle Service button is pushed, the SensorService is toggled.
+	 * Hell, did you expect that??
+	 * 
+	 * @param view
+	 */
 	public void onToggleService(View view) {
 		LinearLayout linlay = (LinearLayout) findViewById(R.id.linlay_log);
 		
@@ -149,8 +162,9 @@ public class HomeActivity extends FragmentActivity implements
 			this.startService(i);
 			serviceRunning = true;
 			
+			// Feedback for user on home-tab
 			TextView msg = new TextView(this);
-			msg.setText("Enabled SensorService (first results may take some time)");
+			msg.setText("-> Enabled SensorService! (be patient ;)");
 			linlay.addView(msg);
 		}else{
 			// Stop SensorService
@@ -158,8 +172,9 @@ public class HomeActivity extends FragmentActivity implements
 			this.stopService(i);
 			serviceRunning = false;
 			
+			// Feedback for user on home-tab
 			TextView msg = new TextView(this);
-			msg.setText("Disabled SensorService");
+			msg.setText("-> Disabled SensorService!");
 			linlay.addView(msg);
 		}
 	}
@@ -196,7 +211,7 @@ public class HomeActivity extends FragmentActivity implements
 		    if(time == 0)
 		    	return;
 		    
-		    // Output raw values
+		    // Output raw values in raw-value-tab
 		    TextView latRes = (TextView) findViewById(R.id.tv_lat_res);
 		    TextView lonRes = (TextView) findViewById(R.id.tv_long_res);
 		    TextView altRes = (TextView) findViewById(R.id.tv_alt_res);

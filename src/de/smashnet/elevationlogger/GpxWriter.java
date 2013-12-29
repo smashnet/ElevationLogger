@@ -10,15 +10,50 @@ import java.util.Locale;
 
 import android.util.Log;
 
+/**
+ * This class should simplify the creation of GPX files.
+ * 
+ * @author Nicolas Inden
+ * @contact nicolas.inden@smashnet.de
+ * @date 29.12.2013
+ */
 public class GpxWriter {
+	/**
+	 * Name of the gpx file
+	 */
 	private String filename;
+	
+	/**
+	 * Directory where the file should be stored
+	 */
 	private File directory;
+	
+	/**
+	 * Creation date of this file
+	 */
 	private Date time;
+	
+	/**
+	 * Helps buffering contents before they are written to file
+	 */
 	private StringBuilder sb;
+	
+	/**
+	 * If a file is finished, all following route points are ignored
+	 * A file is finished if the footer is written. 
+	 */
 	private boolean finished = false;
 	
+	/**
+	 * Basic constructor
+	 * 
+	 * @param file is used as filename but gets the date prepended at the beginning
+	 * @param dir the directory where the file should be saved
+	 */
 	public GpxWriter(String file, File dir) {
 		time = new Date();
+		
+		// Create readable date string
 		SimpleDateFormat sDateFormat = new SimpleDateFormat("yyMMdd-HHmm", Locale.GERMANY);
 		String date = sDateFormat.format(time);
 		
@@ -27,6 +62,9 @@ public class GpxWriter {
 		sb = new StringBuilder();
 	}
 	
+	/**
+	 * Writes a standard GPX file header in the StringBuilder buffer
+	 */
 	public void writeHeader() {
 		Log.i("GpxWriter", "Logging to file: " + filename);
 		SimpleDateFormat sDateFormat = new SimpleDateFormat("yyMMdd-HHmm", Locale.GERMANY);
@@ -45,12 +83,26 @@ public class GpxWriter {
 		sb.append("\t\t<desc></desc>\n");
 	}
 	
+	/**
+	 * Writes a standard GPX file footer in the StringBuilder buffer and declares
+	 * this file as finished
+	 */
 	public void writeFooter() {
 		sb.append("\t</rte>\n");
 		sb.append("</gpx>\n");
 		finished = true;
 	}
 	
+	/**
+	 * Add a route point to the StringBuidler buffer with the following values:
+	 * 
+	 * @param lat the latitude value
+	 * @param lon the longitude value
+	 * @param alt the altitude value
+	 * @param acc the accuracy of lat/lon
+	 * @param mbar the air pressure
+	 * @param time the UTC time of the corresponding GPS fix
+	 */
 	public void addRoutePoint(double lat, double lon, double alt, float acc, float mbar, long time) {
 		if(finished)
 			return;
@@ -63,10 +115,16 @@ public class GpxWriter {
 		sb.append("\t\t</rtept>\n");
 	}
 	
+	/**
+	 * Takes all contents of the StringBuilder buffer
+	 * and writes it to the storage device, finally clearing
+	 * the StringBuilder buffer
+	 */
 	public void flushToFile() {
 		try {
 			File measurefile = new File(directory, filename);
-			if(!measurefile.createNewFile())
+			if(!measurefile.exists())
+				if(!measurefile.createNewFile())
 					System.out.println("Couldn't create file");
 			
 			FileWriter measurefile_writer = new FileWriter(measurefile, true);

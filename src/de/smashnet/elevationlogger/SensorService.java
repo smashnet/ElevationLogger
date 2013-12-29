@@ -18,14 +18,48 @@ import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+/**
+ * SensorService lets GPS and air pressure sensors run even
+ * if the app is not on foreground.
+ * 
+ * If the HomeActivity is in foreground the sensor values are passed
+ * there using LocalBroadcastManager.
+ * 
+ * @author Nicolas Inden
+ * @contact nicolas.inden@smashnet.de
+ * @date 29.12.2013
+ */
 public class SensorService extends Service
 			 implements LocationListener, SensorEventListener{
 	
+	/**
+	 * Handles sensor service
+	 */
 	SensorManager mSensorManager;
+	
+	/**
+	 * Handles location service
+	 */
 	LocationManager mLocationManager;
+	
+	/**
+	 * We use the air pressure sensor
+	 */
 	Sensor mPressure;
+	
+	/**
+	 * Source for location information
+	 */
 	String mProvider;
+	
+	/**
+	 * Last measured air pressure
+	 */
 	float currentPressure = 0.0f;
+	
+	/**
+	 * Writes values to a GPX file
+	 */
 	GpxWriter mGpxWriter;
 	
 
@@ -43,6 +77,8 @@ public class SensorService extends Service
 	public void onDestroy() {
 		super.onDestroy();
 		Log.i("SensorServie", "Service stopped!");
+		
+		// Unregister sensors and finish GPX file
 		mSensorManager.unregisterListener(this);
 		mLocationManager.removeUpdates(this);
 		mGpxWriter.writeFooter();
@@ -68,7 +104,7 @@ public class SensorService extends Service
 		}
 			    
 		// Create GpxWriter
-		mGpxWriter = new GpxWriter("record.gpx", getStorageDir());
+		mGpxWriter = new GpxWriter("record.gpx", getStorageDir("ElevationLog","measurements"));
 		mGpxWriter.writeHeader();
 		
 		// We want this service to continue running until it is explicitly
@@ -87,6 +123,13 @@ public class SensorService extends Service
 		currentPressure = event.values[0];
 	}
 
+	/**
+	 * This is invoked each time we receive a new location from the LocationManager. The values
+	 * are stored into a GPX file and additionally are broadcasted to the HomeActivity
+	 * for displaying purposes.
+	 * 
+	 * @param location the location object
+	 */
 	@Override
 	public void onLocationChanged(Location location) {
 		mGpxWriter.addRoutePoint(location.getLatitude(), location.getLongitude(),
@@ -129,9 +172,17 @@ public class SensorService extends Service
 		
 	}
 
-	public File getStorageDir() {
+	/**
+	 * Returns a File object for ExternalStoragePublicDirectory/$progname/$dirname
+	 * If the directories do not exists yet, they are created
+	 * 
+	 * @param progname the name of this app
+	 * @param dirname the name of the subdirectory where data should be stored
+	 * @return the File object representing the storage directory
+	 */
+	public File getStorageDir(String progname, String dirname) {
         // Get the directory for the user's public pictures directory. 
-        File file = new File(Environment.getExternalStoragePublicDirectory("ElevationLog"), "measurements");
+        File file = new File(Environment.getExternalStoragePublicDirectory(progname), dirname);
         if (!file.exists()) {
         	if(!file.mkdirs())
         		System.out.println("Directory not created");
