@@ -8,11 +8,14 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import android.util.Log;
+
 public class GpxWriter {
 	private String filename;
 	private File directory;
 	private Date time;
 	private StringBuilder sb;
+	private boolean finished = false;
 	
 	public GpxWriter(String file, File dir) {
 		time = new Date();
@@ -25,6 +28,7 @@ public class GpxWriter {
 	}
 	
 	public void writeHeader() {
+		Log.i("GpxWriter", "Logging to file: " + filename);
 		SimpleDateFormat sDateFormat = new SimpleDateFormat("yyMMdd-HHmm", Locale.GERMANY);
 		String date = sDateFormat.format(time);
 		sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n");
@@ -44,9 +48,12 @@ public class GpxWriter {
 	public void writeFooter() {
 		sb.append("\t</rte>\n");
 		sb.append("</gpx>\n");
+		finished = true;
 	}
 	
 	public void addRoutePoint(double lat, double lon, double alt, float acc, float mbar, long time) {
+		if(finished)
+			return;
 		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.GERMANY);
 		String isoTime = df.format(new Date(time));
 		sb.append("\t\t<rtept lat=\"" + lat + "\" lon=\"" + lon + "\">\n");

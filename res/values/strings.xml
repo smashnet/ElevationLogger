@@ -17,5 +17,7 @@
     <string name="txt_air">Air Pressure</string>
     <string name="txt_air_pressure">Pressure:</string>
     <string name="txt_console">Console</string>
+    <string name="service_name">Sensor Service</string>
+    <string name="txt_gps_time">GPS Time:</string>
 
 </resources>

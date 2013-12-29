@@ -1,24 +1,20 @@
 package de.smashnet.elevationlogger;
 
-import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.Locale;
 
 import android.app.ActionBar;
 import android.app.FragmentTransaction;
+import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -28,7 +24,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class HomeActivity extends FragmentActivity implements
-		ActionBar.TabListener, LocationListener, SensorEventListener {
+		ActionBar.TabListener {
 
 	/**
 	 * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -39,13 +35,12 @@ public class HomeActivity extends FragmentActivity implements
 	 * {@link android.support.v4.app.FragmentStatePagerAdapter}.
 	 */
 	SectionsPagerAdapter mSectionsPagerAdapter;
-	SensorManager mSensorManager;
-	Sensor mPressure;
-	LocationManager locMan;
-	String provider;
 	
-	float currentPressure = 0.0f;
-	GpxWriter gpx;
+	/**
+	 * Our handler for received Intents. This will be called whenever an Intent
+	 * with an action named "custom-event-name" is broadcasted.
+	 */
+	private BroadcastReceiver mMessageReceiver = new SensorDataReceiver();
 
 	/**
 	 * The {@link ViewPager} that will host the section contents.
@@ -91,20 +86,15 @@ public class HomeActivity extends FragmentActivity implements
 					.setTabListener(this));
 		}
 		
-		// Init air pressure sensor
-		mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-	    mPressure = mSensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
-	    
-	    // Init GPS
-		locMan = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-		provider = LocationManager.GPS_PROVIDER;
-	    if(provider != null){
-	    	locMan.requestLocationUpdates(provider, 400, 0, this);
-	    }
-	    
-	    // Create GpxWriter
-	    gpx = new GpxWriter("record.gpx", getStorageDir());
-	    gpx.writeHeader();
+		// Register to receive messages.
+		// We are registering an observer (mMessageReceiver) to receive Intents
+		// with actions named "custom-event-name".
+		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
+		    new IntentFilter("sensor-data"));
+		
+		// Start SensorService
+		Intent i= new Intent(this, SensorService.class);
+		this.startService(i); 
 	}
 
 	@Override
@@ -117,81 +107,21 @@ public class HomeActivity extends FragmentActivity implements
 	@Override
 	public void onResume() {
 	  super.onResume();
-	  
-	  // Resume air pressure sensor
-	  mSensorManager.registerListener(this, mPressure, 500000);
-		  
-	  // Resume GPS
-	  if(provider != null){
-		  locMan.requestLocationUpdates(provider, 400, 0, this);
-	  }
 	}
 	
 	@Override
 	public void onPause() {
 		super.onPause();
-		mSensorManager.unregisterListener(this);
 	}
 	
 	@Override
 	public void onStop() {
 		super.onStop();
-		gpx.writeFooter();
-		gpx.flushToFile();
 	}
 	
 	@Override
-	public void onAccuracyChanged(Sensor sensor, int accuracy) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void onSensorChanged(SensorEvent event) {
-		currentPressure = event.values[0];
-		System.out.println("Air pressure: " + currentPressure + " mBar");
-		
-		TextView airRes = (TextView) findViewById(R.id.tv_air_pressure_res);
-		airRes.setText(String.valueOf(currentPressure) + " mBar");
-	}
-	
-	@Override
-	public void onLocationChanged(Location location) {
-		TextView latRes = (TextView) findViewById(R.id.tv_lat_res);
-		TextView longRes = (TextView) findViewById(R.id.tv_long_res);
-		TextView altRes = (TextView) findViewById(R.id.tv_alt_res);
-		TextView accRes = (TextView) findViewById(R.id.tv_acc_res);
-		
-		gpx.addRoutePoint(location.getLatitude(), location.getLongitude(), location.getAltitude(), location.getAccuracy(), currentPressure, location.getTime());
-		gpx.flushToFile();
-		
-		latRes.setText(String.valueOf(location.getLatitude()));
-		longRes.setText(String.valueOf(location.getLongitude()));
-		altRes.setText(String.valueOf(location.getAltitude()) + "m");
-		accRes.setText(String.valueOf(location.getAccuracy()) + "m");
-		
-		System.out.println("Lat: " + location.getLatitude());
-		System.out.println("Long: " + location.getLongitude());
-	    System.out.println("Alt: " + location.getAltitude());
-	    System.out.println("Acc: " + location.getAccuracy());
-	}
-
-	@Override
-	public void onProviderDisabled(String provider) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void onProviderEnabled(String provider) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void onStatusChanged(String provider, int status, Bundle extras) {
-		// TODO Auto-generated method stub
-		
+	public void onDestroy() {
+		super.onDestroy();
 	}
 
 	@Override
@@ -209,17 +139,58 @@ public class HomeActivity extends FragmentActivity implements
 	public void onTabReselected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
 	}
 	
-	public File getStorageDir() {
-        // Get the directory for the user's public pictures directory. 
-        File file = new File(Environment.getExternalStoragePublicDirectory("ElevationLog"), "measurements");
-        if (!file.exists()) {
-        	if(!file.mkdirs())
-        		System.out.println("Directory not created");
-        } else {
-        	System.out.println("Directory exists!");
-        }
-        return file;
-    }
+	/**
+	 * Custom receiver for sensor data from SensorService
+	 * @author Nicolas Inden
+	 */
+	public class SensorDataReceiver extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			double lat, lon, alt;
+			float acc, pressure;
+			long time;
+			
+			// Get extra data included in the Intent
+		    lat = intent.getDoubleExtra("lat", -1.0);
+		    if(lat == -1.0)
+		    	return;
+		    lon = intent.getDoubleExtra("lon", -1.0);
+		    if(lon == -1.0)
+		    	return;
+		    alt = intent.getDoubleExtra("alt", -1.0);
+		    if(alt == -1.0)
+		    	return;
+		    acc = intent.getFloatExtra("acc", -1.0f);
+		    if(acc == -1.0f)
+		    	return;
+		    pressure = intent.getFloatExtra("pres", -1.0f);
+		    if(pressure == -1.0f)
+		    	return;
+		    time = intent.getLongExtra("time", 0);
+		    if(time == 0)
+		    	return;
+		    
+		    // Output raw values
+		    TextView latRes = (TextView) findViewById(R.id.tv_lat_res);
+		    TextView lonRes = (TextView) findViewById(R.id.tv_long_res);
+		    TextView altRes = (TextView) findViewById(R.id.tv_alt_res);
+		    TextView accRes = (TextView) findViewById(R.id.tv_acc_res);
+		    TextView preRes = (TextView) findViewById(R.id.tv_air_pressure_res);
+		    TextView timRes = (TextView) findViewById(R.id.tv_time_res);
+		    
+		    SimpleDateFormat sDateFormat = new SimpleDateFormat("dd.MM.yy HH:mm:ss", Locale.GERMANY);
+			String date = sDateFormat.format(time);
+		    
+		    latRes.setText(String.valueOf(lat));
+		    lonRes.setText(String.valueOf(lon));
+		    altRes.setText(String.valueOf(alt) + " m");
+		    accRes.setText(String.valueOf(acc) + " m");
+		    preRes.setText(String.valueOf(pressure) + " mBar");
+		    timRes.setText(date);
+		}
+		
+	}
 
 	/**
 	 * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
@@ -305,12 +276,10 @@ public class HomeActivity extends FragmentActivity implements
 		}
 
 		private void onCreateDiagram(View rootView) {
-			// TODO Auto-generated method stub
 			
 		}
 
 		private void onCreateRawView(View rootView) {
-			// TODO Auto-generated method stub
 			
 		}
 

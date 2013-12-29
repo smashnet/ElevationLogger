@@ -43,6 +43,16 @@
         android:layout_marginTop="20dp"
         android:textStyle="bold"
         android:text="@string/txt_gps_long" />
+    
+    <TextView
+        android:id="@+id/tv_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/tv_air"
+        android:layout_below="@+id/h_divider3"
+        android:layout_marginTop="10dp"
+        android:textStyle="bold"
+        android:text="@string/txt_gps_time" />
 
     <TextView
         android:id="@+id/tv_alt"
@@ -79,6 +89,14 @@
         android:layout_alignBottom="@+id/tv_long"
         android:layout_alignLeft="@+id/tv_lat_res"
         android:text="@string/txt_empty" />
+    
+    <TextView
+        android:id="@+id/tv_time_res"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/tv_time"
+        android:layout_alignLeft="@+id/tv_long_res"
+        android:text="@string/txt_empty" />
 
     <TextView
         android:id="@+id/tv_alt_res"
@@ -114,7 +132,7 @@
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/tv_long"
         android:layout_below="@+id/h_divider3"
-        android:layout_marginTop="30dp"
+        android:layout_marginTop="50dp"
         android:text="@string/txt_air"
         android:textAppearance="?android:attr/textAppearanceLarge" />
     
