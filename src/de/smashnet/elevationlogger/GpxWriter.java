@@ -113,7 +113,10 @@ public class GpxWriter {
 		sb.append("\t\t\t<trkpt lat=\"" + lat + "\" lon=\"" + lon + "\">\n");
 		sb.append("\t\t\t\t<ele>" + alt + "</ele>\n");
 		sb.append("\t\t\t\t<time>" + isoTime + "</time>\n");
-		sb.append("\t\t\t\t<desc>mbar:" + mbar + ",acc:" + acc + "</desc>\n");
+		sb.append("\t\t\t\t<extensions>\n");
+		sb.append("\t\t\t\t\t<accuracy>" + acc + "</accuracy>\n");
+		sb.append("\t\t\t\t\t<airpressure>" + mbar + "</airpressure>\n");
+		sb.append("\t\t\t\t</extensions>\n");
 		sb.append("\t\t\t</trkpt>\n");
 	}
 	
