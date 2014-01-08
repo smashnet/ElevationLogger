@@ -45,3 +45,8 @@ Contact
 * GPG:
 	* Key: 0xB2F8AA17
 	* Fingerprint: A757 5741 FD1E 63E8 357D  48E2 3C68 AE70 B2F8 AA17
+
+License
+=======
+
+This work is published under _GPL v2_ license. A full version of the license can be found in the _LICENSE.md_ file.
