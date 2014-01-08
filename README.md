@@ -22,17 +22,17 @@ The track in the GPX file looks like this
 
 	...
 	<trk>
-    <name>ElevationLogger recording</name>
-    <desc></desc>
-    <trkseg>
-      <trkpt lat="47.12345" lon="12.12345">
-      	<ele>723.0</ele>
-      	<time>2014-01-02T12:27:27Z</time>
-      	<extensions>
-        	<accuracy>14.0</accuracy>
-        	<airpressure>933.90674</airpressure>
-      	</extensions>
-    	</trkpt>
+		<name>ElevationLogger recording</name>
+		<desc></desc>
+		<trkseg>
+			<trkpt lat="47.12345" lon="12.12345">
+				<ele>723.0</ele>
+				<time>2014-01-02T12:27:27Z</time>
+				<extensions>
+					<accuracy>14.0</accuracy>
+					<airpressure>933.90674</airpressure>
+				</extensions>
+			</trkpt>
 		</trkseg>
 	</trk>
 	...
