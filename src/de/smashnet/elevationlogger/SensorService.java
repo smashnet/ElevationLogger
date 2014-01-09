@@ -121,6 +121,9 @@ public class SensorService extends Service
 	@Override
 	public void onSensorChanged(SensorEvent event) {
 		currentPressure = event.values[0];
+		Intent intent = new Intent("sensor-data-pressure");
+		intent.putExtra("pres", currentPressure);
+		LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
 	}
 
 	/**
@@ -132,12 +135,15 @@ public class SensorService extends Service
 	 */
 	@Override
 	public void onLocationChanged(Location location) {
+		if(!location.hasAccuracy() || !location.hasAltitude() || !location.hasSpeed())
+			return;
+		
 		mGpxWriter.addRoutePoint(location.getLatitude(), location.getLongitude(),
 				location.getAltitude(), location.getAccuracy(), currentPressure, location.getTime());
 		mGpxWriter.flushToFile();
 		
 		// Broadcast sensor-data to HomeActivity
-		Intent intent = new Intent("sensor-data");
+		Intent intent = new Intent("sensor-data-complete");
 		intent.putExtra("lat", location.getLatitude());
 		intent.putExtra("lon", location.getLongitude());
 		intent.putExtra("alt", location.getAltitude());

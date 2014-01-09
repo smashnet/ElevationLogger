@@ -47,7 +47,8 @@ public class HomeActivity extends FragmentActivity implements
 	 * Our handler for received Intents. This will be called whenever an Intent
 	 * with an action named "custom-event-name" is broadcasted.
 	 */
-	private BroadcastReceiver mMessageReceiver = new SensorDataReceiver();
+	private BroadcastReceiver mMessageReceiverComplete = new SensorDataCompleteReceiver();
+	private BroadcastReceiver mMessageReceiverPressure = new SensorDataPressureReceiver();
 
 	/**
 	 * The {@link ViewPager} that will host the section contents.
@@ -101,8 +102,10 @@ public class HomeActivity extends FragmentActivity implements
 		// Register to receive messages.
 		// We are registering an observer (mMessageReceiver) to receive Intents
 		// with actions named "sensor-data".
-		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
-		    new IntentFilter("sensor-data"));
+		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiverComplete,
+		    new IntentFilter("sensor-data-complete"));
+		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiverPressure,
+			new IntentFilter("sensor-data-pressure"));
 	}
 
 	@Override
@@ -183,7 +186,7 @@ public class HomeActivity extends FragmentActivity implements
 	 * Custom receiver for sensor data from SensorService
 	 * @author Nicolas Inden
 	 */
-	public class SensorDataReceiver extends BroadcastReceiver {
+	public class SensorDataCompleteReceiver extends BroadcastReceiver {
 
 		@Override
 		public void onReceive(Context context, Intent intent) {
@@ -228,6 +231,26 @@ public class HomeActivity extends FragmentActivity implements
 		    accRes.setText(String.valueOf(acc) + " m");
 		    preRes.setText(String.valueOf(pressure) + " mBar");
 		    timRes.setText(date);
+		}
+		
+	}
+	
+	/**
+	 * Custom receiver for sensor data from SensorService
+	 * @author Nicolas Inden
+	 */
+	public class SensorDataPressureReceiver extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			float pressure;
+			
+			pressure = intent.getFloatExtra("pres", -1.0f);
+		    if(pressure == -1.0f)
+		    	return;
+		    
+		    TextView preRes = (TextView) findViewById(R.id.tv_air_pressure_res);
+		    preRes.setText(String.valueOf(pressure) + " mBar");
 		}
 		
 	}
