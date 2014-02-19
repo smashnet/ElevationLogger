@@ -250,7 +250,10 @@ public class HomeActivity extends FragmentActivity implements
 		    	return;
 		    
 		    TextView preRes = (TextView) findViewById(R.id.tv_air_pressure_res);
+		    TextView preAlt = (TextView) findViewById(R.id.tv_air_altitude_res);
 		    preRes.setText(String.valueOf(pressure) + " mBar");
+		    double res = -((Math.pow(pressure/1013.25,1/5.255) - 1) * 288.15)/0.0065;
+		    preAlt.setText(String.format("%.2f", res) + " m");
 		}
 		
 	}

@@ -20,5 +20,6 @@
     <string name="service_name">Sensor Service</string>
     <string name="txt_gps_time">GPS Time:</string>
     <string name="txt_service">Toggle Service</string>
+    <string name="txt_air_altitude">Altitude:</string>
 
 </resources>

@@ -165,4 +165,23 @@
         android:layout_alignLeft="@+id/tv_long_res"
         android:text="@string/txt_empty" />
 
+    <TextView
+        android:id="@+id/tv_air_altitude"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/tv_air_pressure"
+        android:layout_below="@+id/tv_air_pressure"
+        android:layout_marginTop="18dp"
+        android:text="@string/txt_air_altitude"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_air_altitude_res"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/tv_air_altitude"
+        android:layout_alignBottom="@+id/tv_air_altitude"
+        android:layout_alignLeft="@+id/tv_air_pressure_res"
+        android:text="@string/txt_empty" />
+
 </RelativeLayout>
