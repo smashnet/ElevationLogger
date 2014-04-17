@@ -58,6 +58,11 @@ public class SensorService extends Service
 	float currentPressure = 0.0f;
 	
 	/**
+	 * Used to Schmitt-triggering data recording
+	 */
+	boolean recording;
+	
+	/**
 	 * Writes values to a GPX file
 	 */
 	GpxWriter mGpxWriter;
@@ -73,6 +78,14 @@ public class SensorService extends Service
 
 	}
 	
+	/**
+	 * Do some cleanup if the Service is destroyed/stopped:
+	 * <ul>
+	 * 	<li>Unregister SensorManager listener</li>
+	 * 	<li>Stop LocationManager updates</li>
+	 * 	<li>Write GPX footer and flush to file</li>
+	 * </ul>
+	 */
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
@@ -85,9 +98,19 @@ public class SensorService extends Service
 		mGpxWriter.flushToFile();
 	}
 	
+	/**
+	 * This is invoked when the Service is started. It initializes the air pressure sensor,
+	 * the GPS LocationManager and the GpxWriter.
+	 * 
+	 * @param intent the intent
+	 * @param flags the flags
+	 * @param startId the startId
+	 * @return The service mode. In this case: START_STICKY (only stop if explicitly asked to stop)
+	 */
 	@Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.i("LocalService", "Received start id " + startId + ": " + intent);
+		recording = false;
         
 		// Init air pressure sensor
 		mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -103,9 +126,7 @@ public class SensorService extends Service
 			Log.i("LocalService", "Started GPS");
 		}
 			    
-		// Create GpxWriter
-		mGpxWriter = new GpxWriter("record.gpx", getStorageDir("ElevationLog","measurements"));
-		mGpxWriter.writeHeader();
+		// GpxWriter is initialized in onLocationChanged()
 		
 		// We want this service to continue running until it is explicitly
         // stopped, so return sticky.
@@ -114,10 +135,17 @@ public class SensorService extends Service
 
 	@Override
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
-		// TODO Auto-generated method stub
+		// TODO Nothing to do here so far ;-)
 		
 	}
 
+	/**
+	 * We use this function to broadcast air pressure values to the HomeActivity to have
+	 * a more frequent update for the air pressure. Nevertheless, no data recording here
+	 * without a position.
+	 * 
+	 * @param event the SensorEvent containing the sensor value
+	 */
 	@Override
 	public void onSensorChanged(SensorEvent event) {
 		currentPressure = event.values[0];
@@ -135,12 +163,22 @@ public class SensorService extends Service
 	 */
 	@Override
 	public void onLocationChanged(Location location) {
+		//Check if required information is available
 		if(!location.hasAccuracy() || !location.hasAltitude() || !location.hasSpeed())
 			return;
 		
-		mGpxWriter.addRoutePoint(location.getLatitude(), location.getLongitude(),
-				location.getAltitude(), location.getAccuracy(), currentPressure, location.getTime());
-		mGpxWriter.flushToFile();
+		// Schmitt-trigger data recording depending on GPS accuracy
+		if(location.getAccuracy() <= 14.0 && !recording){
+			recording = true;
+			
+			mGpxWriter = new GpxWriter(this, "record.gpx", getStorageDir("ElevationLog","measurements"));
+			mGpxWriter.writeHeader();
+		}else if(location.getAccuracy() > 18.0 && recording){
+			recording = false;
+			
+			mGpxWriter.writeFooter();
+			mGpxWriter.flushToFile();
+		}
 		
 		// Broadcast sensor-data to HomeActivity
 		Intent intent = new Intent("sensor-data-complete");
@@ -152,29 +190,36 @@ public class SensorService extends Service
 		intent.putExtra("time", location.getTime());
 		LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
 		
+		// Sensor data log output
 		Log.i("SensorService", "Lat: " + location.getLatitude());
 		Log.i("SensorService", "Lon: " + location.getLongitude());
 	    Log.i("SensorService", "Alt: " + location.getAltitude());
 	    Log.i("SensorService", "Acc: " + location.getAccuracy());
 	    Log.i("SensorService", "Pres: " + currentPressure);
 	    Log.i("SensorService", "Time: " + location.getTime());
+	    
+	    // Save sensor-data to GPX file if GPS accuracy is <= 15 meters
+	    if(!recording)
+			return;
+	 	mGpxWriter.addRoutePoint(location.getLatitude(), location.getLongitude(), location.getAltitude(), location.getAccuracy(), currentPressure, location.getTime());
+	 	mGpxWriter.flushToFile();
 	}
 
 	@Override
 	public void onProviderDisabled(String provider) {
-		// TODO Auto-generated method stub
+		// TODO Nothing to do here so far ;-)
 		
 	}
 
 	@Override
 	public void onProviderEnabled(String provider) {
-		// TODO Auto-generated method stub
+		// TODO Nothing to do here so far ;-)
 		
 	}
 
 	@Override
 	public void onStatusChanged(String provider, int status, Bundle extras) {
-		// TODO Auto-generated method stub
+		// TODO Nothing to do here so far ;-)
 		
 	}
 

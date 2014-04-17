@@ -1,6 +1,7 @@
 package de.smashnet.elevationlogger;
 
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 import android.app.ActionBar;
@@ -180,6 +181,37 @@ public class HomeActivity extends FragmentActivity implements
 			msg.setText("-> Disabled SensorService!");
 			linlay.addView(msg);
 		}
+	}
+	
+	/**
+	 * This one is invoked if the "Send Results" button is pushed. It processes so far
+	 * unprocessed GPX files written by the SensorService. GPX files are converted into
+	 * simple traces (location,pressure) tuples. (Lat,Lon) locations are mapped to
+	 * nearest OSM node.
+	 * 
+	 * @param view
+	 */
+	public void onSendResults(View view) {
+		//So far just testing content
+		writeOnEventLog("Test");
+	}
+	
+	/**
+	 * Little helper to write text to the event log of HomeActivity.
+	 * 
+	 * @param text the text to be displayed
+	 */
+	public void writeOnEventLog(String text) {
+		// Create readable date string
+		Date time = new Date();
+		SimpleDateFormat sDateFormat = new SimpleDateFormat("yyMMdd-HHmmss", Locale.GERMANY);
+		String date = sDateFormat.format(time);
+		
+		TextView welcome = new TextView(this);
+		LinearLayout log = (LinearLayout) findViewById(R.id.linlay_log);
+		welcome.setText(date + ": " + text);
+		
+		log.addView(welcome);
 	}
 	
 	/**

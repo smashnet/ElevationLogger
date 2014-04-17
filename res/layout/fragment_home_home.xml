@@ -2,44 +2,15 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
-    
-    <TextView
-        android:id="@+id/tv_console"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginLeft="10dp"
-        android:layout_marginTop="10dp"
-        android:text="@string/txt_console"
-        android:textAppearance="?android:attr/textAppearanceLarge" />
-    
-     <Button
-        android:id="@+id/btn_service"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBaseline="@+id/tv_console"
-        android:layout_alignBottom="@+id/tv_console"
-        android:layout_alignRight="@+id/sv_log"
-        android:onClick="onToggleService"
-        android:text="@string/txt_service" />
-
-    <View
-        android:id="@+id/h_divider1"
-        android:layout_width="match_parent"
-        android:layout_height="2dip"
-        android:layout_below="@+id/tv_console"
-        android:layout_marginLeft="4dip"
-        android:layout_marginRight="4dip"
-        android:layout_marginTop="10dip"
-        android:background="?android:attr/dividerVertical" />
 
     <ScrollView
         android:id="@+id/sv_log"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/h_divider1"
+        android:layout_above="@+id/btn_service"
         android:layout_marginTop="25dp"
+        android:layout_marginBottom="10dp"
         android:layout_marginLeft="10dip"
         android:layout_marginRight="10dip"
         android:fillViewport="true" >
@@ -54,6 +25,44 @@
         </LinearLayout>
     </ScrollView>
 
-   
+    <TextView
+        android:id="@+id/tv_console"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/h_divider1"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="10dp"
+        android:layout_marginLeft="10dp"
+        android:text="@string/txt_console"
+        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+    <Button
+        android:id="@+id/btn_sendResults"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/btn_service"
+        android:layout_alignBottom="@+id/btn_service"
+        android:layout_alignRight="@+id/sv_log"
+        android:onClick="onSendResults"
+        android:text="@string/txt_sendResults" />
+
+    <View
+        android:id="@+id/h_divider1"
+        android:layout_width="match_parent"
+        android:layout_height="2dip"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="43dp"
+        android:background="?android:attr/dividerVertical" />
+
+    <Button
+        android:id="@+id/btn_service"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/sv_log"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="10dp"
+        android:onClick="onToggleService"
+        android:text="@string/txt_service" />
 
 </RelativeLayout>

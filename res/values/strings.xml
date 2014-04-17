@@ -16,10 +16,11 @@
     <string name="txt_empty">-</string>
     <string name="txt_air">Air Pressure</string>
     <string name="txt_air_pressure">Pressure:</string>
-    <string name="txt_console">Console</string>
+    <string name="txt_console">Event Log</string>
     <string name="service_name">Sensor Service</string>
     <string name="txt_gps_time">GPS Time:</string>
     <string name="txt_service">Toggle Service</string>
     <string name="txt_air_altitude">Altitude:</string>
+    <string name="txt_sendResults">Send Results</string>
 
 </resources>

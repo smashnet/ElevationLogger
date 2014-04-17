@@ -8,6 +8,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.util.Log;
 
 /**
@@ -45,12 +48,17 @@ public class GpxWriter {
 	private boolean finished = false;
 	
 	/**
+	 * The context this class was instantiated in
+	 */
+	private Context context;
+	
+	/**
 	 * Basic constructor
 	 * 
 	 * @param file is used as filename but gets the date prepended at the beginning
 	 * @param dir the directory where the file should be saved
 	 */
-	public GpxWriter(String file, File dir) {
+	public GpxWriter(Context context, String file, File dir) {
 		time = new Date();
 		
 		// Create readable date string
@@ -60,6 +68,7 @@ public class GpxWriter {
 		filename = date + "_" + file;
 		directory = dir;
 		sb = new StringBuilder();
+		this.context = context;
 	}
 	
 	/**
@@ -135,6 +144,7 @@ public class GpxWriter {
 			FileWriter measurefile_writer = new FileWriter(measurefile, true);
 			measurefile_writer.append(sb.toString());
 			measurefile_writer.close();
+			this.context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(measurefile)));
 			
 			// Clear stringbuilder
 			sb = new StringBuilder();
