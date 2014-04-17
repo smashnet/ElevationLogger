@@ -158,8 +158,6 @@ public class HomeActivity extends FragmentActivity implements
 	 * @param view
 	 */
 	public void onToggleService(View view) {
-		LinearLayout linlay = (LinearLayout) findViewById(R.id.linlay_log);
-		
 		if(!serviceRunning) {
 			// Start SensorService
 			Intent i = new Intent(this, SensorService.class);
@@ -167,9 +165,7 @@ public class HomeActivity extends FragmentActivity implements
 			serviceRunning = true;
 			
 			// Feedback for user on home-tab
-			TextView msg = new TextView(this);
-			msg.setText("-> Enabled SensorService! (be patient ;)");
-			linlay.addView(msg);
+			writeOnEventLog("Enabled SensorService! (be patient ;)");
 		}else{
 			// Stop SensorService
 			Intent i = new Intent(this, SensorService.class);
@@ -177,9 +173,7 @@ public class HomeActivity extends FragmentActivity implements
 			serviceRunning = false;
 			
 			// Feedback for user on home-tab
-			TextView msg = new TextView(this);
-			msg.setText("-> Disabled SensorService!");
-			linlay.addView(msg);
+			writeOnEventLog("Disabled SensorService!");
 		}
 	}
 	
@@ -382,11 +376,7 @@ public class HomeActivity extends FragmentActivity implements
 		}
 
 		private void onCreateHome(View rootView) {
-			TextView welcome = new TextView(rootView.getContext());
-			LinearLayout log = (LinearLayout) rootView.findViewById(R.id.linlay_log);
-			welcome.setText("Get some nuts!");
-			
-			log.addView(welcome);
+
 		}
 	}
 }
