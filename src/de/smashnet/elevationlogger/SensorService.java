@@ -2,6 +2,7 @@ package de.smashnet.elevationlogger;
 
 import java.io.File;
 
+import jsqlite.Exception;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -67,6 +68,10 @@ public class SensorService extends Service
 	 */
 	GpxWriter mGpxWriter;
 	
+	/**
+	 * Spatialite Database
+	 */
+	jsqlite.Database mDatabase;
 
 	@Override
 	public IBinder onBind(Intent intent) {
@@ -75,7 +80,7 @@ public class SensorService extends Service
 	
 	@Override
 	public void onCreate() {
-
+		
 	}
 	
 	/**
@@ -89,13 +94,21 @@ public class SensorService extends Service
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		Log.i("SensorServie", "Service stopped!");
+		Log.i("SensorService", "Service stopped!");
 		
 		// Unregister sensors and finish GPX file
 		mSensorManager.unregisterListener(this);
 		mLocationManager.removeUpdates(this);
-		mGpxWriter.writeFooter();
-		mGpxWriter.flushToFile();
+		if(mGpxWriter != null){
+			mGpxWriter.writeFooter();
+			mGpxWriter.flushToFile();
+		}
+		try {
+			mDatabase.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+			Log.w("SensorService", "Error closing database!");
+		}
 	}
 	
 	/**
@@ -109,21 +122,31 @@ public class SensorService extends Service
 	 */
 	@Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-		Log.i("LocalService", "Received start id " + startId + ": " + intent);
+		Log.i("SensorService", "Received start id " + startId + ": " + intent);
 		recording = false;
         
 		// Init air pressure sensor
 		mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 		mPressure = mSensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
 		mSensorManager.registerListener(this, mPressure, 500000); // 500ms
-		Log.i("LocalService", "Started air pressure");
+		Log.i("SensorService", "Started air pressure");
 			    
 		// Init GPS
 		mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 		mProvider = LocationManager.GPS_PROVIDER;
 		if(mProvider != null){
 			mLocationManager.requestLocationUpdates(mProvider, 400, 0, this);
-			Log.i("LocalService", "Started GPS");
+			Log.i("SensorService", "Started GPS");
+		}
+		
+		//Init Spatialite database
+		mDatabase = new jsqlite.Database();
+		try {
+			mDatabase.open(getStorageDir("ElevationLog","map") + "/" + getString(R.string.osm_db), jsqlite.Constants.SQLITE_OPEN_READONLY);
+			Log.i("SensorService", "Successfully opened spatialite database :)");
+		} catch (Exception e) {
+			e.printStackTrace();
+			Log.w("SensorService", "Error opening spatialite database!");
 		}
 			    
 		// GpxWriter is initialized in onLocationChanged()

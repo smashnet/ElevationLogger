@@ -22,5 +22,6 @@
     <string name="txt_service">Toggle Service</string>
     <string name="txt_air_altitude">Altitude:</string>
     <string name="txt_sendResults">Send Results</string>
+    <string name="osm_db">koeln-regbez-latest.sqlite</string>
 
 </resources>
