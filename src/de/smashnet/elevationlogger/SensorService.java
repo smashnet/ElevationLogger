@@ -3,6 +3,7 @@ package de.smashnet.elevationlogger;
 import java.io.File;
 
 import jsqlite.Exception;
+import jsqlite.Stmt;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -221,9 +222,34 @@ public class SensorService extends Service
 	    Log.i("SensorService", "Pres: " + currentPressure);
 	    Log.i("SensorService", "Time: " + location.getTime());
 	    
-	    // Save sensor-data to GPX file if GPS accuracy is <= 15 meters
+	    // Save sensor-data if GPS accuracy is <= 15 meters
 	    if(!recording)
 			return;
+	    try {
+	    	String slGetNearestNode = "SELECT osm_id, ST_Distance(geometry, MakePoint(?, ?), 0) AS distance "
+					+ "FROM 'regbez-koeln_nodes' "
+					+ "WHERE ROWID IN (SELECT ROWID FROM SpatialIndex WHERE f_table_name='regbez-koeln_nodes' AND search_frame=BuildCircleMbr(?, ?, ?)) "
+					+ "AND distance < ? ORDER BY distance LIMIT ?;";
+			Stmt slNearestNodeQuery = mDatabase.prepare(slGetNearestNode);
+			
+			//Define query variables
+			slNearestNodeQuery.bind(1, location.getLongitude()); //MakePoint Lon
+			slNearestNodeQuery.bind(2, location.getLatitude()); //MakePoint Lat
+			slNearestNodeQuery.bind(3, location.getLongitude()); //BuildCircleMbr Lon
+			slNearestNodeQuery.bind(4, location.getLatitude()); //BuildCircleMbr Lat
+			slNearestNodeQuery.bind(5, 0.2); //BuildCircleMbr Radius in CSR units
+			slNearestNodeQuery.bind(6, 30); //max. distance in meters
+			slNearestNodeQuery.bind(7, 1); //LIMIT
+			
+			if(slNearestNodeQuery.step()) {
+				int osm_id = slNearestNodeQuery.column_int(0);
+				double distance = slNearestNodeQuery.column_double(1);
+				Log.i("SpatiaLite", "Nearest node: " + osm_id + " - Distance: " + distance);
+			}
+		} catch (Exception e) {
+			Log.e("SpatiaLite", "Error:" + e);
+		}
+	    
 	 	mGpxWriter.addRoutePoint(location.getLatitude(), location.getLongitude(), location.getAltitude(), location.getAccuracy(), currentPressure, location.getTime());
 	 	mGpxWriter.flushToFile();
 	}
@@ -254,7 +280,7 @@ public class SensorService extends Service
 	 * @param dirname the name of the subdirectory where data should be stored
 	 * @return the File object representing the storage directory
 	 */
-	public File getStorageDir(String progname, String dirname) {
+	public static File getStorageDir(String progname, String dirname) {
         // Get the directory for the user's public pictures directory. 
         File file = new File(Environment.getExternalStoragePublicDirectory(progname), dirname);
         if (!file.exists()) {

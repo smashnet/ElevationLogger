@@ -4,6 +4,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import jsqlite.Exception;
+import jsqlite.Stmt;
 import android.app.ActionBar;
 import android.app.FragmentTransaction;
 import android.content.BroadcastReceiver;
@@ -17,6 +19,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewPager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
@@ -188,6 +191,32 @@ public class HomeActivity extends FragmentActivity implements
 	public void onSendResults(View view) {
 		//So far just testing content
 		writeOnEventLog("Test");
+		try {
+			jsqlite.Database mDatabase = new jsqlite.Database();
+			mDatabase.open(SensorService.getStorageDir("ElevationLog","map") + "/" + getString(R.string.osm_db), jsqlite.Constants.SQLITE_OPEN_READONLY);
+	    	String slGetNearestNode = "SELECT osm_id, ST_Distance(geometry, MakePoint(?, ?), 0) AS distance "
+					+ "FROM 'regbez-koeln_nodes' "
+					+ "WHERE ROWID IN (SELECT ROWID FROM SpatialIndex WHERE f_table_name='regbez-koeln_nodes' AND search_frame=BuildCircleMbr(?, ?, ?)) "
+					+ "AND distance < ? ORDER BY distance LIMIT ?;";
+			Stmt slNearestNodeQuery = mDatabase.prepare(slGetNearestNode);
+			
+			//Define query variables
+			slNearestNodeQuery.bind(1, 6.06039); //MakePoint Lon
+			slNearestNodeQuery.bind(2, 50.77888); //MakePoint Lat
+			slNearestNodeQuery.bind(3, 6.06039); //BuildCircleMbr Lon
+			slNearestNodeQuery.bind(4, 50.77888); //BuildCircleMbr Lat
+			slNearestNodeQuery.bind(5, 0.2); //BuildCircleMbr Radius in CSR units
+			slNearestNodeQuery.bind(6, 30); //max. distance in meters
+			slNearestNodeQuery.bind(7, 1); //LIMIT
+			
+			if(slNearestNodeQuery.step()) {
+				int osm_id = slNearestNodeQuery.column_int(0);
+				double distance = slNearestNodeQuery.column_double(1);
+				Log.i("SpatiaLite", "Nearest node: " + osm_id + " - Distance: " + distance);
+			}
+		} catch (Exception e) {
+			Log.e("SpatiaLite", "Error:" + e);
+		}
 	}
 	
 	/**
