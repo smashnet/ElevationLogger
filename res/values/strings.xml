@@ -13,6 +13,9 @@
     <string name="txt_gps_long">Longitude:</string>
     <string name="txt_gps_acc">Accuracy:</string>
     <string name="txt_gps_alt">Altitude:</string>
+    <string name="txt_osm_header">OSM</string>
+    <string name="txt_osm_id">OSM ID:</string>
+    <string name="txt_osm_dist">Distance:</string>
     <string name="txt_empty">-</string>
     <string name="txt_air">Air Pressure</string>
     <string name="txt_air_pressure">Pressure:</string>

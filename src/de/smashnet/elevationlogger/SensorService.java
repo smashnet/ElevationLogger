@@ -14,6 +14,7 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
@@ -204,6 +205,10 @@ public class SensorService extends Service
 			mGpxWriter.flushToFile();
 		}
 		
+		String res = getNearestOSMNode(location, 0.001, 30, 1);
+		long osm_id = Long.valueOf(res.split(",")[0]);
+		double dist = Double.valueOf(res.split(",")[1]);
+		
 		// Broadcast sensor-data to HomeActivity
 		Intent intent = new Intent("sensor-data-complete");
 		intent.putExtra("lat", location.getLatitude());
@@ -211,6 +216,8 @@ public class SensorService extends Service
 		intent.putExtra("alt", location.getAltitude());
 		intent.putExtra("acc", location.getAccuracy());
 		intent.putExtra("pres", currentPressure);
+		intent.putExtra("osm_id", osm_id);
+		intent.putExtra("osm_distance", dist);
 		intent.putExtra("time", location.getTime());
 		LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
 		
@@ -220,38 +227,44 @@ public class SensorService extends Service
 	    Log.i("SensorService", "Alt: " + location.getAltitude());
 	    Log.i("SensorService", "Acc: " + location.getAccuracy());
 	    Log.i("SensorService", "Pres: " + currentPressure);
+	    Log.i("SensorService", "Osm_id: " + osm_id);
+	    Log.i("SensorService", "Dist: " + dist);
 	    Log.i("SensorService", "Time: " + location.getTime());
 	    
 	    // Save sensor-data if GPS accuracy is <= 15 meters
 	    if(!recording)
 			return;
-	    try {
-	    	String slGetNearestNode = "SELECT osm_id, ST_Distance(geometry, MakePoint(?, ?), 0) AS distance "
-					+ "FROM 'regbez-koeln_nodes' "
-					+ "WHERE ROWID IN (SELECT ROWID FROM SpatialIndex WHERE f_table_name='regbez-koeln_nodes' AND search_frame=BuildCircleMbr(?, ?, ?)) "
-					+ "AND distance < ? ORDER BY distance LIMIT ?;";
-			Stmt slNearestNodeQuery = mDatabase.prepare(slGetNearestNode);
-			
-			//Define query variables
-			slNearestNodeQuery.bind(1, location.getLongitude()); //MakePoint Lon
-			slNearestNodeQuery.bind(2, location.getLatitude()); //MakePoint Lat
-			slNearestNodeQuery.bind(3, location.getLongitude()); //BuildCircleMbr Lon
-			slNearestNodeQuery.bind(4, location.getLatitude()); //BuildCircleMbr Lat
-			slNearestNodeQuery.bind(5, 0.2); //BuildCircleMbr Radius in CSR units
-			slNearestNodeQuery.bind(6, 30); //max. distance in meters
-			slNearestNodeQuery.bind(7, 1); //LIMIT
-			
-			if(slNearestNodeQuery.step()) {
-				int osm_id = slNearestNodeQuery.column_int(0);
-				double distance = slNearestNodeQuery.column_double(1);
-				Log.i("SpatiaLite", "Nearest node: " + osm_id + " - Distance: " + distance);
-			}
-		} catch (Exception e) {
-			Log.e("SpatiaLite", "Error:" + e);
-		}
 	    
 	 	mGpxWriter.addRoutePoint(location.getLatitude(), location.getLongitude(), location.getAltitude(), location.getAccuracy(), currentPressure, location.getTime());
 	 	mGpxWriter.flushToFile();
+	}
+
+	private String getNearestOSMNode(Location location, double radius, double distance, int limit) {
+		try {
+			//jsqlite.Database mDatabase = new jsqlite.Database();
+			//mDatabase.open(SensorService.getStorageDir("ElevationLog","map") + "/" + getApplicationContext().getString(R.string.osm_db), jsqlite.Constants.SQLITE_OPEN_READONLY);
+			
+			String slGetNearestNode = "SELECT osm_id, ST_Distance(geometry, MakePoint(" + location.getLongitude() + ", " + location.getLatitude() + "), 0) AS distance "
+					+ "FROM 'regbez-koeln_nodes' "
+					+ "WHERE ROWID IN (SELECT ROWID FROM SpatialIndex WHERE f_table_name='regbez-koeln_nodes' "
+					+ "AND search_frame=BuildCircleMbr(" + location.getLongitude() + ", " + location.getLatitude() +", " + radius + ")) "
+					+ "AND distance < " + distance + " ORDER BY distance LIMIT " + limit + ";";
+			
+			//mDatabase.exec(slGetNearestNode, new SpatialiteCallback());
+			//mDatabase.close();
+			Stmt stmt = mDatabase.prepare(slGetNearestNode);
+			
+			if(stmt.step()){
+				String res = stmt.column_int(0) + "," + stmt.column_double(1);
+				stmt.close();
+				return res;
+			}
+			stmt.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+			Log.e("DBquery", "DB error");
+		}
+		return null;
 	}
 
 	@Override
@@ -291,4 +304,97 @@ public class SensorService extends Service
         }
         return file;
     }
+	
+	public class QueryNearestPoints extends AsyncTask<String, Integer, String>{
+		private Context context;
+		private Location location;
+		
+		public QueryNearestPoints(Context con, Location loc) {
+			this.context = con;
+			this.location = loc;
+		}
+
+		/**
+		 * Does a background query on the spatialite database for the nearest point to the given coordinates and properties.
+		 * <ul>
+		 * 	<li>params[0] -> longitude</li>
+		 * 	<li>params[1] -> latitude</li>
+		 * 	<li>params[2] -> search radius in CSR (usually 0.001)</li>
+		 * 	<li>params[3] -> max distance for resulting nodes</li>
+		 * 	<li>params[4] -> max amount of results</li>
+		 * </ul>
+		 */
+		@Override
+		protected String doInBackground(String... params) {
+			if(params.length < 5) {
+				Log.e("AsyncQuery", "Too few arguments");
+				return null;
+			}
+			try {
+				jsqlite.Database mDatabase = new jsqlite.Database();
+				mDatabase.open(SensorService.getStorageDir("ElevationLog","map") + "/" + getApplicationContext().getString(R.string.osm_db), jsqlite.Constants.SQLITE_OPEN_READONLY);
+				
+				String slGetNearestNode = "SELECT osm_id, ST_Distance(geometry, MakePoint(" + params[0] + ", " + params[1] + "), 0) AS distance "
+						+ "FROM 'regbez-koeln_nodes' "
+						+ "WHERE ROWID IN (SELECT ROWID FROM SpatialIndex WHERE f_table_name='regbez-koeln_nodes' "
+						+ "AND search_frame=BuildCircleMbr(" + params[0] + ", " + params[1] +", " + params[2] + ")) "
+						+ "AND distance < " + params[3] + " ORDER BY distance LIMIT " + params[4] + ";";
+				
+				//mDatabase.exec(slGetNearestNode, new SpatialiteCallback());
+				//mDatabase.close();
+				Stmt stmt = mDatabase.prepare(slGetNearestNode);
+				
+				if(stmt.step()){
+					String res = stmt.column_int(0) + "," + stmt.column_double(1);
+					stmt.close();
+					return res;
+				}
+				stmt.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+				Log.e("DBquery", "DB error");
+			}
+			
+			return null;
+		}
+		
+		@Override
+		public void onPostExecute(String res) {
+			if(res == null) {
+				Log.i("QueryResult", "null");
+				return;
+			}
+			
+			
+		}
+		
+		/*public class SpatialiteCallback implements jsqlite.Callback {
+
+			@Override
+			public void columns(String[] cols) {
+				for(int i = 0; i < cols.length; i++) {
+					System.out.print(cols[i] + " ");
+				}
+				System.out.println();
+			}
+
+			@Override
+			public boolean newrow(String[] row) {
+				for(int i = 0; i < row.length; i++) {
+					System.out.print(row[i] + " ");
+				}
+				System.out.println();
+				return false;
+			}
+
+			@Override
+			public void types(String[] type) {
+				for(int i = 0; i < type.length; i++) {
+					System.out.print(type[i] + " ");
+				}
+				System.out.println();
+			}
+			
+		}*/
+	}
 }

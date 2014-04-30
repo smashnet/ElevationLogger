@@ -12,6 +12,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -168,7 +169,7 @@ public class HomeActivity extends FragmentActivity implements
 			serviceRunning = true;
 			
 			// Feedback for user on home-tab
-			writeOnEventLog("Enabled SensorService! (be patient ;)");
+			writeLog("Enabled SensorService! (be patient ;)");
 		}else{
 			// Stop SensorService
 			Intent i = new Intent(this, SensorService.class);
@@ -176,7 +177,7 @@ public class HomeActivity extends FragmentActivity implements
 			serviceRunning = false;
 			
 			// Feedback for user on home-tab
-			writeOnEventLog("Disabled SensorService!");
+			writeLog("Disabled SensorService!");
 		}
 	}
 	
@@ -190,33 +191,7 @@ public class HomeActivity extends FragmentActivity implements
 	 */
 	public void onSendResults(View view) {
 		//So far just testing content
-		writeOnEventLog("Test");
-		try {
-			jsqlite.Database mDatabase = new jsqlite.Database();
-			mDatabase.open(SensorService.getStorageDir("ElevationLog","map") + "/" + getString(R.string.osm_db), jsqlite.Constants.SQLITE_OPEN_READONLY);
-	    	String slGetNearestNode = "SELECT osm_id, ST_Distance(geometry, MakePoint(?, ?), 0) AS distance "
-					+ "FROM 'regbez-koeln_nodes' "
-					+ "WHERE ROWID IN (SELECT ROWID FROM SpatialIndex WHERE f_table_name='regbez-koeln_nodes' AND search_frame=BuildCircleMbr(?, ?, ?)) "
-					+ "AND distance < ? ORDER BY distance LIMIT ?;";
-			Stmt slNearestNodeQuery = mDatabase.prepare(slGetNearestNode);
-			
-			//Define query variables
-			slNearestNodeQuery.bind(1, 6.06039); //MakePoint Lon
-			slNearestNodeQuery.bind(2, 50.77888); //MakePoint Lat
-			slNearestNodeQuery.bind(3, 6.06039); //BuildCircleMbr Lon
-			slNearestNodeQuery.bind(4, 50.77888); //BuildCircleMbr Lat
-			slNearestNodeQuery.bind(5, 0.2); //BuildCircleMbr Radius in CSR units
-			slNearestNodeQuery.bind(6, 30); //max. distance in meters
-			slNearestNodeQuery.bind(7, 1); //LIMIT
-			
-			if(slNearestNodeQuery.step()) {
-				int osm_id = slNearestNodeQuery.column_int(0);
-				double distance = slNearestNodeQuery.column_double(1);
-				Log.i("SpatiaLite", "Nearest node: " + osm_id + " - Distance: " + distance);
-			}
-		} catch (Exception e) {
-			Log.e("SpatiaLite", "Error:" + e);
-		}
+		writeLog("Test");
 	}
 	
 	/**
@@ -224,7 +199,7 @@ public class HomeActivity extends FragmentActivity implements
 	 * 
 	 * @param text the text to be displayed
 	 */
-	public void writeOnEventLog(String text) {
+	public void writeLog(String text) {
 		// Create readable date string
 		Date time = new Date();
 		SimpleDateFormat sDateFormat = new SimpleDateFormat("yyMMdd-HHmmss", Locale.GERMANY);
@@ -245,9 +220,9 @@ public class HomeActivity extends FragmentActivity implements
 
 		@Override
 		public void onReceive(Context context, Intent intent) {
-			double lat, lon, alt;
+			double lat, lon, alt, dist;
 			float acc, pressure;
-			long time;
+			long time, osm_id;
 			
 			// Get extra data included in the Intent
 		    lat = intent.getDoubleExtra("lat", -1.0);
@@ -265,6 +240,12 @@ public class HomeActivity extends FragmentActivity implements
 		    pressure = intent.getFloatExtra("pres", -1.0f);
 		    if(pressure == -1.0f)
 		    	return;
+		    osm_id = intent.getLongExtra("osm_id", -1);
+		    if(osm_id == -1)
+		    	return;
+		    dist = intent.getDoubleExtra("osm_distance", -1.0d);
+		    if(dist == -1.0d)
+		    	return;
 		    time = intent.getLongExtra("time", 0);
 		    if(time == 0)
 		    	return;
@@ -275,6 +256,8 @@ public class HomeActivity extends FragmentActivity implements
 		    TextView altRes = (TextView) findViewById(R.id.tv_alt_res);
 		    TextView accRes = (TextView) findViewById(R.id.tv_acc_res);
 		    TextView preRes = (TextView) findViewById(R.id.tv_air_pressure_res);
+		    TextView osmRes = (TextView) findViewById(R.id.tv_osm_id_res);
+		    TextView distRes = (TextView) findViewById(R.id.tv_osm_dist_res);
 		    TextView timRes = (TextView) findViewById(R.id.tv_time_res);
 		    
 		    SimpleDateFormat sDateFormat = new SimpleDateFormat("dd.MM.yy HH:mm:ss", Locale.GERMANY);
@@ -285,6 +268,8 @@ public class HomeActivity extends FragmentActivity implements
 		    altRes.setText(String.valueOf(alt) + " m");
 		    accRes.setText(String.valueOf(acc) + " m");
 		    preRes.setText(String.valueOf(pressure) + " mBar");
+		    osmRes.setText(String.valueOf(osm_id));
+		    distRes.setText(String.valueOf(dist) + " m");
 		    timRes.setText(date);
 		}
 		
