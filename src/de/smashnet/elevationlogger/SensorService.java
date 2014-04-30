@@ -206,8 +206,12 @@ public class SensorService extends Service
 		}
 		
 		String res = getNearestOSMNode(location, 0.001, 30, 1);
-		long osm_id = Long.valueOf(res.split(",")[0]);
-		double dist = Double.valueOf(res.split(",")[1]);
+		long osm_id = -1;
+		double dist = -1.0d;
+		if(res != null){
+			osm_id = Long.valueOf(res.split(",")[0]);
+			dist = Double.valueOf(res.split(",")[1]);
+		}
 		
 		// Broadcast sensor-data to HomeActivity
 		Intent intent = new Intent("sensor-data-complete");

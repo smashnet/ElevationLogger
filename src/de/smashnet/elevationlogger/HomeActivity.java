@@ -240,12 +240,10 @@ public class HomeActivity extends FragmentActivity implements
 		    pressure = intent.getFloatExtra("pres", -1.0f);
 		    if(pressure == -1.0f)
 		    	return;
+		    
 		    osm_id = intent.getLongExtra("osm_id", -1);
-		    if(osm_id == -1)
-		    	return;
 		    dist = intent.getDoubleExtra("osm_distance", -1.0d);
-		    if(dist == -1.0d)
-		    	return;
+		    
 		    time = intent.getLongExtra("time", 0);
 		    if(time == 0)
 		    	return;
@@ -268,8 +266,16 @@ public class HomeActivity extends FragmentActivity implements
 		    altRes.setText(String.valueOf(alt) + " m");
 		    accRes.setText(String.valueOf(acc) + " m");
 		    preRes.setText(String.valueOf(pressure) + " mBar");
-		    osmRes.setText(String.valueOf(osm_id));
-		    distRes.setText(String.valueOf(dist) + " m");
+		    if(osm_id > 0) {
+		    	osmRes.setText(String.valueOf(osm_id));
+		    } else {
+		    	osmRes.setText("-");
+		    }
+		    if(dist > 0.0) {
+		    	distRes.setText(String.valueOf(dist) + " m");
+		    } else {
+		    	distRes.setText("-");
+		    }
 		    timRes.setText(date);
 		}
 		
