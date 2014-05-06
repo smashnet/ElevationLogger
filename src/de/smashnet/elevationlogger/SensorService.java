@@ -58,12 +58,12 @@ public class SensorService extends Service
 	/**
 	 * Last measured air pressure
 	 */
-	float currentPressure = 0.0f;
+	float mCurrentPressure = 0.0f;
 	
 	/**
 	 * Used to Schmitt-triggering data recording
 	 */
-	boolean recording;
+	boolean mRecording;
 	
 	/**
 	 * Writes values to a GPX file
@@ -125,7 +125,7 @@ public class SensorService extends Service
 	@Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.i("SensorService", "Received start id " + startId + ": " + intent);
-		recording = false;
+		mRecording = false;
         
 		// Init air pressure sensor
 		mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -173,9 +173,9 @@ public class SensorService extends Service
 	 */
 	@Override
 	public void onSensorChanged(SensorEvent event) {
-		currentPressure = event.values[0];
+		mCurrentPressure = event.values[0];
 		Intent intent = new Intent("sensor-data-pressure");
-		intent.putExtra("pres", currentPressure);
+		intent.putExtra("pres", mCurrentPressure);
 		LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
 	}
 
@@ -188,18 +188,28 @@ public class SensorService extends Service
 	 */
 	@Override
 	public void onLocationChanged(Location location) {
+		boolean emulator = true;
+		
 		//Check if required information is available
-		if(!location.hasAccuracy() || !location.hasAltitude() || !location.hasSpeed())
-			return;
+		if(!location.hasAccuracy() || !location.hasAltitude() || !location.hasSpeed()) {
+			if(emulator) {
+				location.setAccuracy(7.0f);
+				location.setAltitude(200.0d);
+				location.setSpeed(0.0f);
+				mCurrentPressure = 980.0f;
+			} else {
+				return;
+			}
+		}
 		
 		// Schmitt-trigger data recording depending on GPS accuracy
-		if(location.getAccuracy() <= 14.0 && !recording){
-			recording = true;
+		if(location.getAccuracy() <= 14.0 && !mRecording){
+			mRecording = true;
 			
 			mGpxWriter = new GpxWriter(this, "record.gpx", getStorageDir("ElevationLog","measurements"));
 			mGpxWriter.writeHeader();
-		}else if(location.getAccuracy() > 18.0 && recording){
-			recording = false;
+		}else if(location.getAccuracy() > 18.0 && mRecording){
+			mRecording = false;
 			
 			mGpxWriter.writeFooter();
 			mGpxWriter.flushToFile();
@@ -219,7 +229,7 @@ public class SensorService extends Service
 		intent.putExtra("lon", location.getLongitude());
 		intent.putExtra("alt", location.getAltitude());
 		intent.putExtra("acc", location.getAccuracy());
-		intent.putExtra("pres", currentPressure);
+		intent.putExtra("pres", mCurrentPressure);
 		intent.putExtra("osm_id", osm_id);
 		intent.putExtra("osm_distance", dist);
 		intent.putExtra("time", location.getTime());
@@ -230,16 +240,16 @@ public class SensorService extends Service
 		Log.i("SensorService", "Lon: " + location.getLongitude());
 	    Log.i("SensorService", "Alt: " + location.getAltitude());
 	    Log.i("SensorService", "Acc: " + location.getAccuracy());
-	    Log.i("SensorService", "Pres: " + currentPressure);
+	    Log.i("SensorService", "Pres: " + mCurrentPressure);
 	    Log.i("SensorService", "Osm_id: " + osm_id);
 	    Log.i("SensorService", "Dist: " + dist);
 	    Log.i("SensorService", "Time: " + location.getTime());
 	    
 	    // Save sensor-data if GPS accuracy is <= 15 meters
-	    if(!recording)
+	    if(!mRecording)
 			return;
 	    
-	 	mGpxWriter.addRoutePoint(location.getLatitude(), location.getLongitude(), location.getAltitude(), location.getAccuracy(), currentPressure, location.getTime());
+	 	mGpxWriter.addRoutePoint(location.getLatitude(), location.getLongitude(), location.getAltitude(), location.getAccuracy(), mCurrentPressure, location.getTime());
 	 	mGpxWriter.flushToFile();
 	}
 
@@ -310,12 +320,8 @@ public class SensorService extends Service
     }
 	
 	public class QueryNearestPoints extends AsyncTask<String, Integer, String>{
-		private Context context;
-		private Location location;
 		
 		public QueryNearestPoints(Context con, Location loc) {
-			this.context = con;
-			this.location = loc;
 		}
 
 		/**
