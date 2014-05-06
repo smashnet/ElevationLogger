@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -20,37 +21,42 @@ import android.util.Log;
  * @contact nicolas.inden@smashnet.de
  * @date 29.12.2013
  */
-public class GpxWriter {
+public class GpxWriter implements Serializable{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -3172959510015296715L;
+
 	/**
 	 * Name of the gpx file
 	 */
-	private String filename;
+	private String mFilename;
 	
 	/**
 	 * Directory where the file should be stored
 	 */
-	private File directory;
+	private File mDirectory;
 	
 	/**
 	 * Creation date of this file
 	 */
-	private Date time;
+	private Date mTime;
 	
 	/**
 	 * Helps buffering contents before they are written to file
 	 */
-	private StringBuilder sb;
+	private StringBuilder mSB;
 	
 	/**
 	 * If a file is finished, all following route points are ignored
 	 * A file is finished if the footer is written. 
 	 */
-	private boolean finished = false;
+	private boolean mFinished = false;
 	
 	/**
 	 * The context this class was instantiated in
 	 */
-	private Context context;
+	private Context mContext;
 	
 	/**
 	 * Basic constructor
@@ -58,39 +64,39 @@ public class GpxWriter {
 	 * @param file is used as filename but gets the date prepended at the beginning
 	 * @param dir the directory where the file should be saved
 	 */
-	public GpxWriter(Context context, String file, File dir) {
-		time = new Date();
+	public GpxWriter(Context context, Date time, File dir, String file) {
+		mTime = time;
 		
 		// Create readable date string
 		SimpleDateFormat sDateFormat = new SimpleDateFormat("yyMMdd-HHmm", Locale.GERMANY);
-		String date = sDateFormat.format(time);
+		String date = sDateFormat.format(mTime);
 		
-		filename = date + "_" + file;
-		directory = dir;
-		sb = new StringBuilder();
-		this.context = context;
+		mFilename = date + "_" + file;
+		mDirectory = dir;
+		mSB = new StringBuilder();
+		this.mContext = context;
 	}
 	
 	/**
 	 * Writes a standard GPX file header in the StringBuilder buffer
 	 */
 	public void writeHeader() {
-		Log.i("GpxWriter", "Logging to file: " + filename);
+		Log.i("GpxWriter", "Logging to file: " + mFilename);
 		SimpleDateFormat sDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.GERMANY);
-		String date = sDateFormat.format(time);
-		sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n");
-		sb.append("<gpx version=\"1.1\" creator=\"ElevationLogger v0.1 experimental\">\n");
-		sb.append("\t<metadata>\n");
-		sb.append("\t\t<name>" + filename + "</name>\n");
-		sb.append("\t\t<time>" + date + "</time>\n");
-		sb.append("\t\t<author>\n");
-		sb.append("\t\t\t<name>ElevationLogger</name>\n");
-		sb.append("\t\t</author>\n");
-		sb.append("\t</metadata>\n");
-		sb.append("\t<trk>\n");
-		sb.append("\t\t<name>ElevationLogger recording</name>\n");
-		sb.append("\t\t<desc></desc>\n");
-		sb.append("\t\t<trkseg>\n");
+		String date = sDateFormat.format(mTime);
+		mSB.append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n");
+		mSB.append("<gpx version=\"1.1\" creator=\"ElevationLogger v0.1 experimental\">\n");
+		mSB.append("\t<metadata>\n");
+		mSB.append("\t\t<name>" + mFilename + "</name>\n");
+		mSB.append("\t\t<time>" + date + "</time>\n");
+		mSB.append("\t\t<author>\n");
+		mSB.append("\t\t\t<name>ElevationLogger</name>\n");
+		mSB.append("\t\t</author>\n");
+		mSB.append("\t</metadata>\n");
+		mSB.append("\t<trk>\n");
+		mSB.append("\t\t<name>ElevationLogger recording</name>\n");
+		mSB.append("\t\t<desc></desc>\n");
+		mSB.append("\t\t<trkseg>\n");
 	}
 	
 	/**
@@ -98,10 +104,10 @@ public class GpxWriter {
 	 * this file as finished
 	 */
 	public void writeFooter() {
-		sb.append("\t\t</trkseg>\n");
-		sb.append("\t</trk>\n");
-		sb.append("</gpx>\n");
-		finished = true;
+		mSB.append("\t\t</trkseg>\n");
+		mSB.append("\t</trk>\n");
+		mSB.append("</gpx>\n");
+		mFinished = true;
 	}
 	
 	/**
@@ -114,19 +120,20 @@ public class GpxWriter {
 	 * @param mbar the air pressure
 	 * @param time the UTC time of the corresponding GPS fix
 	 */
-	public void addRoutePoint(double lat, double lon, double alt, float acc, float mbar, long time) {
-		if(finished)
+	public void addRoutePoint(double lat, double lon, double alt, float acc, double mbar, long time, long osm) {
+		if(mFinished)
 			return;
 		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.GERMANY);
 		String isoTime = df.format(new Date(time));
-		sb.append("\t\t\t<trkpt lat=\"" + lat + "\" lon=\"" + lon + "\">\n");
-		sb.append("\t\t\t\t<ele>" + alt + "</ele>\n");
-		sb.append("\t\t\t\t<time>" + isoTime + "</time>\n");
-		sb.append("\t\t\t\t<extensions>\n");
-		sb.append("\t\t\t\t\t<accuracy>" + acc + "</accuracy>\n");
-		sb.append("\t\t\t\t\t<airpressure>" + mbar + "</airpressure>\n");
-		sb.append("\t\t\t\t</extensions>\n");
-		sb.append("\t\t\t</trkpt>\n");
+		mSB.append("\t\t\t<trkpt lat=\"" + lat + "\" lon=\"" + lon + "\">\n");
+		mSB.append("\t\t\t\t<ele>" + alt + "</ele>\n");
+		mSB.append("\t\t\t\t<time>" + isoTime + "</time>\n");
+		mSB.append("\t\t\t\t<extensions>\n");
+		mSB.append("\t\t\t\t\t<accuracy>" + acc + "</accuracy>\n");
+		mSB.append("\t\t\t\t\t<airpressure>" + mbar + "</airpressure>\n");
+		mSB.append("\t\t\t\t\t<nearestosm>" + osm + "</nearestosm>\n");
+		mSB.append("\t\t\t\t</extensions>\n");
+		mSB.append("\t\t\t</trkpt>\n");
 	}
 	
 	/**
@@ -136,18 +143,18 @@ public class GpxWriter {
 	 */
 	public void flushToFile() {
 		try {
-			File measurefile = new File(directory, filename);
+			File measurefile = new File(mDirectory, mFilename);
 			if(!measurefile.exists())
 				if(!measurefile.createNewFile())
 					System.out.println("Couldn't create file");
 			
 			FileWriter measurefile_writer = new FileWriter(measurefile, true);
-			measurefile_writer.append(sb.toString());
+			measurefile_writer.append(mSB.toString());
 			measurefile_writer.close();
-			this.context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(measurefile)));
+			mContext.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(measurefile)));
 			
 			// Clear stringbuilder
-			sb = new StringBuilder();
+			mSB = new StringBuilder();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -156,18 +163,18 @@ public class GpxWriter {
 	}
 
 	public String getFilename() {
-		return filename;
+		return mFilename;
 	}
 
 	public void setFilename(String filename) {
-		this.filename = filename;
+		this.mFilename = filename;
 	}
 
 	public File getDirectory() {
-		return directory;
+		return mDirectory;
 	}
 
 	public void setDirectory(File directory) {
-		this.directory = directory;
+		this.mDirectory = directory;
 	}
 }

@@ -1,6 +1,7 @@
 package de.smashnet.elevationlogger;
 
 import java.io.File;
+import java.io.Serializable;
 
 import jsqlite.Exception;
 import jsqlite.Stmt;
@@ -33,22 +34,27 @@ import android.util.Log;
  * @date 29.12.2013
  */
 public class SensorService extends Service
-			 implements LocationListener, SensorEventListener{
+			 implements LocationListener, SensorEventListener, Serializable{
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 5514644069034973495L;
+
 	/**
 	 * Handles sensor service
 	 */
-	SensorManager mSensorManager;
+	transient SensorManager mSensorManager;
 	
 	/**
 	 * Handles location service
 	 */
-	LocationManager mLocationManager;
+	transient LocationManager mLocationManager;
 	
 	/**
 	 * We use the air pressure sensor
 	 */
-	Sensor mPressure;
+	transient Sensor mPressure;
 	
 	/**
 	 * Source for location information
@@ -66,14 +72,14 @@ public class SensorService extends Service
 	boolean mRecording;
 	
 	/**
-	 * Writes values to a GPX file
+	 * The trace DB
 	 */
-	GpxWriter mGpxWriter;
+	TraceDB mTraceDB;
 	
 	/**
 	 * Spatialite Database
 	 */
-	jsqlite.Database mDatabase;
+	transient jsqlite.Database mDatabase;
 
 	@Override
 	public IBinder onBind(Intent intent) {
@@ -96,21 +102,20 @@ public class SensorService extends Service
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		Log.i("SensorService", "Service stopped!");
 		
 		// Unregister sensors and finish GPX file
 		mSensorManager.unregisterListener(this);
 		mLocationManager.removeUpdates(this);
-		if(mGpxWriter != null){
-			mGpxWriter.writeFooter();
-			mGpxWriter.flushToFile();
-		}
 		try {
 			mDatabase.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 			Log.w("SensorService", "Error closing database!");
 		}
+		//Serialize trace DB to storage
+		mTraceDB.writeTraceDBFile();
+		
+		Log.i("SensorService", "Service stopped!");
 	}
 	
 	/**
@@ -126,6 +131,8 @@ public class SensorService extends Service
     public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.i("SensorService", "Received start id " + startId + ": " + intent);
 		mRecording = false;
+		
+		mTraceDB = new TraceDB(this, "traces.db");
         
 		// Init air pressure sensor
 		mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -205,14 +212,10 @@ public class SensorService extends Service
 		// Schmitt-trigger data recording depending on GPS accuracy
 		if(location.getAccuracy() <= 14.0 && !mRecording){
 			mRecording = true;
-			
-			mGpxWriter = new GpxWriter(this, "record.gpx", getStorageDir("ElevationLog","measurements"));
-			mGpxWriter.writeHeader();
+			mTraceDB.startNewCurrentTrace();
 		}else if(location.getAccuracy() > 18.0 && mRecording){
 			mRecording = false;
-			
-			mGpxWriter.writeFooter();
-			mGpxWriter.flushToFile();
+			mTraceDB.closeCurrentTrace();
 		}
 		
 		String res = getNearestOSMNode(location, 0.001, 30, 1);
@@ -249,8 +252,7 @@ public class SensorService extends Service
 	    if(!mRecording)
 			return;
 	    
-	 	mGpxWriter.addRoutePoint(location.getLatitude(), location.getLongitude(), location.getAltitude(), location.getAccuracy(), mCurrentPressure, location.getTime());
-	 	mGpxWriter.flushToFile();
+	 	mTraceDB.addNodeToCurrentTrace(new LocationNode(location, osm_id, dist, mCurrentPressure));
 	}
 
 	private String getNearestOSMNode(Location location, double radius, double distance, int limit) {
