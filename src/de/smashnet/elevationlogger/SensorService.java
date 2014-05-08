@@ -1,13 +1,15 @@
 package de.smashnet.elevationlogger;
 
 import java.io.File;
-import java.io.Serializable;
+import java.util.LinkedList;
 
 import jsqlite.Exception;
 import jsqlite.Stmt;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -15,7 +17,6 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
@@ -34,27 +35,22 @@ import android.util.Log;
  * @date 29.12.2013
  */
 public class SensorService extends Service
-			 implements LocationListener, SensorEventListener, Serializable{
-	
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 5514644069034973495L;
+			 implements LocationListener, SensorEventListener{
 
 	/**
 	 * Handles sensor service
 	 */
-	transient SensorManager mSensorManager;
+	SensorManager mSensorManager;
 	
 	/**
 	 * Handles location service
 	 */
-	transient LocationManager mLocationManager;
+	LocationManager mLocationManager;
 	
 	/**
 	 * We use the air pressure sensor
 	 */
-	transient Sensor mPressure;
+	Sensor mPressure;
 	
 	/**
 	 * Source for location information
@@ -79,7 +75,12 @@ public class SensorService extends Service
 	/**
 	 * Spatialite Database
 	 */
-	transient jsqlite.Database mDatabase;
+	jsqlite.Database mDatabase;
+	
+	/**
+	 * Receives query from HomeActivity to send current TraceList
+	 */
+	private BroadcastReceiver mMessageReceiverGetTraceList;
 
 	@Override
 	public IBinder onBind(Intent intent) {
@@ -133,6 +134,11 @@ public class SensorService extends Service
 		mRecording = false;
 		
 		mTraceDB = new TraceDB(this, "traces.db");
+		
+		mMessageReceiverGetTraceList = new GetTraceListReceiver(mTraceDB);
+		
+		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiverGetTraceList,
+			    new IntentFilter("get-trace-list"));
         
 		// Init air pressure sensor
 		mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -195,7 +201,7 @@ public class SensorService extends Service
 	 */
 	@Override
 	public void onLocationChanged(Location location) {
-		boolean emulator = true;
+		boolean emulator = false;
 		
 		//Check if required information is available
 		if(!location.hasAccuracy() || !location.hasAltitude() || !location.hasSpeed()) {
@@ -300,6 +306,10 @@ public class SensorService extends Service
 		// TODO Nothing to do here so far ;-)
 		
 	}
+	
+	public LinkedList<LocationTrace> getTraces() {
+		return mTraceDB.getTraces();
+	}
 
 	/**
 	 * Returns a File object for ExternalStoragePublicDirectory/$progname/$dirname
@@ -320,93 +330,23 @@ public class SensorService extends Service
         }
         return file;
     }
-	
-	public class QueryNearestPoints extends AsyncTask<String, Integer, String>{
+	/**
+	 * Custom receiver to receive trace list query from HomeActivity
+	 * @author Nicolas Inden
+	 */
+	public class GetTraceListReceiver extends BroadcastReceiver {
+		private TraceDB mTraceDB;
 		
-		public QueryNearestPoints(Context con, Location loc) {
+		public GetTraceListReceiver(TraceDB db) {
+			mTraceDB = db;
 		}
 
-		/**
-		 * Does a background query on the spatialite database for the nearest point to the given coordinates and properties.
-		 * <ul>
-		 * 	<li>params[0] -> longitude</li>
-		 * 	<li>params[1] -> latitude</li>
-		 * 	<li>params[2] -> search radius in CSR (usually 0.001)</li>
-		 * 	<li>params[3] -> max distance for resulting nodes</li>
-		 * 	<li>params[4] -> max amount of results</li>
-		 * </ul>
-		 */
 		@Override
-		protected String doInBackground(String... params) {
-			if(params.length < 5) {
-				Log.e("AsyncQuery", "Too few arguments");
-				return null;
-			}
-			try {
-				jsqlite.Database mDatabase = new jsqlite.Database();
-				mDatabase.open(SensorService.getStorageDir("ElevationLog","map") + "/" + getApplicationContext().getString(R.string.osm_db), jsqlite.Constants.SQLITE_OPEN_READONLY);
-				
-				String slGetNearestNode = "SELECT osm_id, ST_Distance(geometry, MakePoint(" + params[0] + ", " + params[1] + "), 0) AS distance "
-						+ "FROM 'regbez-koeln_nodes' "
-						+ "WHERE ROWID IN (SELECT ROWID FROM SpatialIndex WHERE f_table_name='regbez-koeln_nodes' "
-						+ "AND search_frame=BuildCircleMbr(" + params[0] + ", " + params[1] +", " + params[2] + ")) "
-						+ "AND distance < " + params[3] + " ORDER BY distance LIMIT " + params[4] + ";";
-				
-				//mDatabase.exec(slGetNearestNode, new SpatialiteCallback());
-				//mDatabase.close();
-				Stmt stmt = mDatabase.prepare(slGetNearestNode);
-				
-				if(stmt.step()){
-					String res = stmt.column_int(0) + "," + stmt.column_double(1);
-					stmt.close();
-					return res;
-				}
-				stmt.close();
-			} catch (Exception e) {
-				e.printStackTrace();
-				Log.e("DBquery", "DB error");
-			}
-			
-			return null;
+		public void onReceive(Context context, Intent intent) {
+			Intent res = new Intent("send-trace-list");
+			res.putExtra("Traces", mTraceDB.getTraces());
+			LocalBroadcastManager.getInstance(context).sendBroadcast(res);
 		}
 		
-		@Override
-		public void onPostExecute(String res) {
-			if(res == null) {
-				Log.i("QueryResult", "null");
-				return;
-			}
-			
-			
-		}
-		
-		/*public class SpatialiteCallback implements jsqlite.Callback {
-
-			@Override
-			public void columns(String[] cols) {
-				for(int i = 0; i < cols.length; i++) {
-					System.out.print(cols[i] + " ");
-				}
-				System.out.println();
-			}
-
-			@Override
-			public boolean newrow(String[] row) {
-				for(int i = 0; i < row.length; i++) {
-					System.out.print(row[i] + " ");
-				}
-				System.out.println();
-				return false;
-			}
-
-			@Override
-			public void types(String[] type) {
-				for(int i = 0; i < type.length; i++) {
-					System.out.print(type[i] + " ");
-				}
-				System.out.println();
-			}
-			
-		}*/
 	}
 }

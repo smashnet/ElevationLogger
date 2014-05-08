@@ -5,8 +5,6 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.LinkedList;
 
-import android.content.Context;
-
 /**
  * Represents a sequence of OSM nodes which the user passed
  * at some point in time. One location-node consists of a OSM
@@ -33,7 +31,7 @@ public class LocationTrace implements Serializable{
 	 * True, if this trace has already been uploaded.
 	 */
 	private boolean mUploaded;
-	Context mContext;
+
 	File mDir;
 	
 	/**
@@ -41,8 +39,7 @@ public class LocationTrace implements Serializable{
 	 * @param con the context that is passed to the GpxWriter
 	 * @param dir the folder where the gpx of this trace is saved
 	 */
-	public LocationTrace(Context con, File dir) {
-		mContext = con;
+	public LocationTrace(File dir) {
 		mDir = dir;
 		mNodes = new LinkedList<LocationNode>();
 		setDate(new Date());
@@ -69,7 +66,7 @@ public class LocationTrace implements Serializable{
 	 * Create a standard conform GPX file from this trace.
 	 */
 	public void writeToGPXFile() {
-		GpxWriter gpxWriter = new GpxWriter(mContext, getDate(), mDir, "record.gpx");
+		GpxWriter gpxWriter = new GpxWriter(getDate(), mDir, "record.gpx");
 		gpxWriter.writeHeader();
 		
 		for(LocationNode node : mNodes) {
@@ -99,6 +96,10 @@ public class LocationTrace implements Serializable{
 	 */
 	public Date getDate() {
 		return mDate;
+	}
+	
+	public int getLength() {
+		return mNodes.size();
 	}
 
 	/**

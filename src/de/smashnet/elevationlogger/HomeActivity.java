@@ -2,6 +2,7 @@ package de.smashnet.elevationlogger;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.Locale;
 
 import android.app.ActionBar;
@@ -50,6 +51,7 @@ public class HomeActivity extends FragmentActivity implements
 	 */
 	private BroadcastReceiver mMessageReceiverComplete = new SensorDataCompleteReceiver();
 	private BroadcastReceiver mMessageReceiverPressure = new SensorDataPressureReceiver();
+	private BroadcastReceiver mMessageReceiverTraceList = new TraceListReceiver();
 
 	/**
 	 * The {@link ViewPager} that will host the section contents.
@@ -59,7 +61,7 @@ public class HomeActivity extends FragmentActivity implements
 	/**
 	 * SensorService running
 	 */
-	boolean serviceRunning = false;
+	boolean mServiceRunning = false;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -107,6 +109,8 @@ public class HomeActivity extends FragmentActivity implements
 		    new IntentFilter("sensor-data-complete"));
 		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiverPressure,
 			new IntentFilter("sensor-data-pressure"));
+		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiverTraceList,
+				new IntentFilter("send-trace-list"));
 	}
 
 	@Override
@@ -158,11 +162,11 @@ public class HomeActivity extends FragmentActivity implements
 	 * @param view
 	 */
 	public void onToggleService(View view) {
-		if(!serviceRunning) {
+		if(!mServiceRunning) {
 			// Start SensorService
 			Intent i = new Intent(this, SensorService.class);
 			this.startService(i);
-			serviceRunning = true;
+			mServiceRunning = true;
 			
 			// Feedback for user on home-tab
 			writeLog("Enabled SensorService! (be patient ;)");
@@ -170,7 +174,7 @@ public class HomeActivity extends FragmentActivity implements
 			// Stop SensorService
 			Intent i = new Intent(this, SensorService.class);
 			this.stopService(i);
-			serviceRunning = false;
+			mServiceRunning = false;
 			
 			// Feedback for user on home-tab
 			writeLog("Disabled SensorService!");
@@ -299,6 +303,37 @@ public class HomeActivity extends FragmentActivity implements
 		}
 		
 	}
+	
+	/**
+	 * Custom receiver to receive trace list data from SensorService
+	 * @author Nicolas Inden
+	 */
+	public class TraceListReceiver extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			LinearLayout traceLayout = (LinearLayout) findViewById(R.id.linlay_traces);
+			@SuppressWarnings("unchecked")
+			LinkedList<LocationTrace> traces = (LinkedList<LocationTrace>) intent.getSerializableExtra("Traces");
+			
+			for(LocationTrace lt : traces) {
+				StringBuilder sb = new StringBuilder();
+
+				SimpleDateFormat sDateFormat = new SimpleDateFormat("dd.MM.yy-HH:mm", Locale.GERMANY);
+				String date = sDateFormat.format(lt.getDate());
+
+				sb.append(date + " | Length: ");
+				sb.append(lt.getLength());
+				sb.append(" nodes. | Is Uploaded: ");
+				sb.append(lt.isUploaded());
+				
+				TextView tv = new TextView(context);
+				tv.setText(sb.toString());
+				traceLayout.addView(tv);
+			}
+		}
+		
+	}
 
 	/**
 	 * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
@@ -371,11 +406,11 @@ public class HomeActivity extends FragmentActivity implements
 				onCreateRawView(rootView);
 				break;
 			case 3:
-				rootView = inflater.inflate(R.layout.fragment_home_dummy, container, false);
-				onCreateDiagram(rootView);
+				rootView = inflater.inflate(R.layout.fragment_home_tracelist, container, false);
+				onCreateTraceList(rootView);
 				break;
 			default:
-				rootView = inflater.inflate(R.layout.fragment_home_dummy, container, false);
+				rootView = inflater.inflate(R.layout.fragment_home_tracelist, container, false);
 				TextView dummyTextView = (TextView) rootView.findViewById(R.id.section_label);
 				dummyTextView.setText(Integer.toString(getArguments().getInt(ARG_SECTION_NUMBER)));	
 			}
@@ -383,8 +418,10 @@ public class HomeActivity extends FragmentActivity implements
 			return rootView;
 		}
 
-		private void onCreateDiagram(View rootView) {
-			
+		private void onCreateTraceList(View rootView) {
+			// Ask SensorService for current tracelist
+			Intent intent = new Intent("get-trace-list");
+			LocalBroadcastManager.getInstance(rootView.getContext()).sendBroadcast(intent);
 		}
 
 		private void onCreateRawView(View rootView) {

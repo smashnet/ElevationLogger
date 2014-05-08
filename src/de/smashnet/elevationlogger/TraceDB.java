@@ -7,7 +7,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.util.LinkedList;
 
 import android.content.Context;
@@ -23,11 +22,7 @@ import android.util.Log;
  * @author Nicolas Inden
  *
  */
-public class TraceDB implements Serializable{
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -4494993505645535954L;
+public class TraceDB{
 	/**
 	 * The file where the DB is stored
 	 */
@@ -76,7 +71,7 @@ public class TraceDB implements Serializable{
 	 * added to mTraces.
 	 */
 	public void startNewCurrentTrace() {
-		mCurrentTrace = new LocationTrace(mContext, getStorageDir("ElevationLog","traces"));
+		mCurrentTrace = new LocationTrace(getStorageDir("ElevationLog","traces"));
 		mTraces.add(mCurrentTrace);
 	}
 	
@@ -87,7 +82,7 @@ public class TraceDB implements Serializable{
 	 */
 	public void addNodeToCurrentTrace(LocationNode node) {
 		if(mCurrentTrace == null)
-			mCurrentTrace = new LocationTrace(mContext, getStorageDir("ElevationLog","traces"));
+			mCurrentTrace = new LocationTrace(getStorageDir("ElevationLog","traces"));
 		mCurrentTrace.addNode(node);
 	}
 	
@@ -157,6 +152,10 @@ public class TraceDB implements Serializable{
 			ioe.printStackTrace();
 			Log.e("DBStorage", "Error writing trace DB file: " + ioe);
 		}
+	}
+	
+	public LinkedList<LocationTrace> getTraces() {
+		return mTraces;
 	}
 
 	/**

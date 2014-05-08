@@ -54,17 +54,12 @@ public class GpxWriter implements Serializable{
 	private boolean mFinished = false;
 	
 	/**
-	 * The context this class was instantiated in
-	 */
-	private Context mContext;
-	
-	/**
 	 * Basic constructor
 	 * 
 	 * @param file is used as filename but gets the date prepended at the beginning
 	 * @param dir the directory where the file should be saved
 	 */
-	public GpxWriter(Context context, Date time, File dir, String file) {
+	public GpxWriter(Date time, File dir, String file) {
 		mTime = time;
 		
 		// Create readable date string
@@ -74,7 +69,6 @@ public class GpxWriter implements Serializable{
 		mFilename = date + "_" + file;
 		mDirectory = dir;
 		mSB = new StringBuilder();
-		this.mContext = context;
 	}
 	
 	/**
@@ -151,7 +145,6 @@ public class GpxWriter implements Serializable{
 			FileWriter measurefile_writer = new FileWriter(measurefile, true);
 			measurefile_writer.append(mSB.toString());
 			measurefile_writer.close();
-			mContext.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(measurefile)));
 			
 			// Clear stringbuilder
 			mSB = new StringBuilder();

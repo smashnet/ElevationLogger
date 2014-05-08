@@ -5,7 +5,7 @@
     <string name="action_settings">Settings</string>
     <string name="title_section1">Home</string>
     <string name="title_section2">Raw Values</string>
-    <string name="title_section3">Diagrams</string>
+    <string name="title_section3">Trace List</string>
     <string name="btn_start_gps">Start GPS</string>
     <string name="btn_start_air">Start Air Pressure</string>
     <string name="txt_gps">GPS</string>
@@ -25,6 +25,7 @@
     <string name="txt_service">Toggle Service</string>
     <string name="txt_air_altitude">Altitude:</string>
     <string name="txt_sendResults">Send Results</string>
+    <string name="txt_traceList">Current traces in DB:</string>
     <string name="osm_db">koeln-regbez-latest.sqlite</string>
 
 </resources>
